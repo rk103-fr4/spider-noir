@@ -4,6 +4,7 @@
 ////////////// WORKING FOR AN ENGLISH VERSION, RIGHT NOW ITS JUST IN SPANISH //////////////
 
 
+
 **Recon pipeline for web pentesting that unifies subdomain enumeration, crawling and fuzzing into an interactive SVG knowledge graph.**
 
 Built for Parrot OS / Kali Linux. Designed for HTB and Bug Bounty workflows.
@@ -154,6 +155,19 @@ Commands are copied to clipboard. Paste in your terminal with `Ctrl+Shift+V`.
 ```
 
 ---
+
+## Legal & Ethical Disclaimer
+
+**IMPORTANT NOTICE:** This tool is developed and published strictly for educational purposes, authorized security auditing, and research within controlled laboratory environments. 
+
+By downloading, cloning, running, or utilizing **Spider Noir**, you agree to the following terms:
+
+1. **Authorized Testing Only:** You shall only execute this tool against targets where you have explicit, written, and prior authorization from the system owner (e.g., within an active Bug Bounty program scope, a formal penetration testing engagement, or self-owned infrastructure).
+2. **Prohibited Actions:** Unauthorized scanning, crawling, or fuzzing against third-party networks without explicit consent is illegal and can be considered a violation of computer crime laws (such as the CFAA in the US or equivalent international cyberlegislation).
+3. **No Liability:** The author (**rk103**) assumes absolutely no liability and is not responsible for any misuse, damage, service disruption, or legal consequences caused by this program. 
+4. **Compliance:** It is the sole responsibility of the end-user to ensure that their usage of this tool complies with all applicable local, national, and international laws.
+
+**Use responsibly. Test only what you own or have explicit permission to hack.**
 
 ## Author
 
