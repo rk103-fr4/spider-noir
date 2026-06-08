@@ -245,7 +245,7 @@ Commands are copied to clipboard. Paste in your terminal with `Ctrl+Shift+V`.
 ```
 
 ---
-
+```
 ## Legal & Ethical Disclaimer
 
 **IMPORTANT NOTICE:** This tool is developed and published strictly for educational purposes, authorized security auditing, and research within controlled laboratory environments. 
