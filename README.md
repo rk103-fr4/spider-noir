@@ -123,9 +123,13 @@ Auto-calib  : No (WAF interference)
 No forms    : Yes (if program prohibits)
 Node limit  : 300
 ```
-📝 Step-by-Step Walkthrough
-When you launch the script, it will guide you through an interactive configuration wizard. Here is a real execution example targeting a Hack The Box machine:
+### 📝 Step-by-Step Walkthrough
 
+When you launch the script, Spider Noir guides you through an interactive command-line wizard to build your reconnaissance scope block by block. 
+
+Here is a realistic execution example targeting a Hack The Box infrastructure node:
+
+```text
 $ python3 spider_noir.py
 
 [?] Custom identification headers (Press Enter to skip): 
@@ -133,7 +137,7 @@ $ python3 spider_noir.py
 [?] Does the program strictly prohibit submitting/testing forms? (y/N): n
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━  GLOBAL TARGET  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-[?] Target URL or IP address: http://10.129.42.195
+[?] Target URL or IP address: [http://10.129.42.195](http://10.129.42.195)
 [?] Port [Enter = inferred from schema]: 80
 
 [?] Path to scope configuration file (Leave empty to skip): 
@@ -161,15 +165,39 @@ $ python3 spider_noir.py
 [?] Total canvas Node limit allocation allowed [300]: 200
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━  SESSION PROFILE SUMMARY  ━━━━━━━━━━━━━━━━━━━━━━━━━
-  Target Scope Host: http://10.129.42.195 (Port 80)
+  Target Scope Host: [http://10.129.42.195](http://10.129.42.195) (Port 80)
   Fuzzer Wordlist  : /usr/share/wordlists/dirb/common.txt
   Output Directory : /home/kali/tools/spider-noir/recon_10_129_42_195_20260608
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 [?] Launch discovery engine pipeline? (Y/n): y
 
-Once confirmed, the pipeline automated tools will run sequentially, saving all JSON results and exporting the definitive recon_graph_*.html inside the newly created session folder.
+### 🏎️ Execution Flow & Output
 
+Once you confirm the configuration wizard by entering `y`, the automated pipeline orchestrates the following execution cycles sequentially:
+
+#### 🔄 The Processing Pipeline
+
+| Phase | Tool | Mechanics & Logic | Primary Output File |
+| :--- | :--- | :--- | :--- |
+| **Phase 0** | `subfinder` | Passive subdomain mapping using multiple OSINT engines without direct target interaction. Discovered hosts are automatically appended to subsequent testing scopes. | `subfinder_results.txt` |
+| **Phase 1** | `katana` | Multi-threaded crawling via headless processing. Includes real-time URL deduplication and a defensive circuit breaker that aborts the scope if 20 consecutive `403 Forbidden` responses are triggered (WAF/CDN lockouts). | `katana_[scope].jsonl` |
+| **Phase 2** | `ffuf` | Aggressive multi-pass directory and extension fuzzing. Provides precise time/request calculations (ETA) before launching, alongside a live terminal status matrix. Supports full telemetry capture on graceful interruption (`Ctrl+C`). | `ffuf_[scope]_[ext].json` |
+| **Phase 3** | `PyVis` | Consolidation of visible and hidden infrastructure artifacts into a dynamic top-down tree map layout calculated natively in Python. | **`recon_graph_[session].html`** |
+
+---
+
+#### 📂 Session Workspace Structure
+
+All discovery telemetry is fully structured and isolated within a timestamped workspace directory:
+
+```text
+recon_target_com_20260608_/
+├── subfinder_results.txt           # Passive subdomain intelligence
+├── katana_target_com.jsonl          # Raw headless crawling records
+├── ffuf_target_com_dirs.json       # Fuzzing Pass 1: Directory hits
+├── ffuf_target_com_php.json        # Fuzzing Pass 2: Extension specific findings
+└── recon_graph_target_com.html     # The definitive standalone interactive dashboard
 ---
 
 ## Graph legend
