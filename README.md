@@ -171,7 +171,7 @@ $ python3 spider_noir.py
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 [?] Launch discovery engine pipeline? (Y/n): y
-
+```
 ### 🏎️ Execution Flow & Output
 
 Once you confirm the configuration wizard by entering `y`, the automated pipeline orchestrates the following execution cycles sequentially:
