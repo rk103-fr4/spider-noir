@@ -57,6 +57,22 @@ The graph shows the target's structure at a glance: which paths exist, what tech
 | pyvis | Graph data structure | `pip install pyvis` |
 | rich | Terminal UI | `pip install rich` |
 
+## 🌐 Available Versions
+
+This framework is maintained in two language variations:
+- **`spider_noir.py` (Default):** Full internationalized version with all interactive wizard prompts, terminal outputs, and graph console layout in **English**.
+- **`spider_noir_es.py`:** The original development version featuring all prompts, execution logs, and interface elements in **Spanish**.
+
+To run your preferred version, simply execute:
+```bash
+# To launch the English version
+python3 spider_noir.py
+
+# To launch the Spanish version
+python3 spider_noir_es.py
+
+
+
 ### Quick start
 
 ```bash
