@@ -171,7 +171,7 @@ By downloading, cloning, running, or utilizing **Spider Noir**, you agree to the
 
 ## Author
 
-**rk103** — [github.com/rk103](https://github.com/rk103)
+**rk103** — [github.com/rk103-fr4](https://github.com/rk103-fr4)
 
 ## License
 
