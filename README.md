@@ -1,7 +1,7 @@
 # 🕷 Spider Noir
 
 
-////////////// WORKING FOR AN ENGLISH VERSION, RIGHT NOW ITS JUST IN SPANISH //////////////
+> 🌐 **Language Note:** The main script (`spider_noir.py`) features an interactive interface and console logs entirely in **English** (industry standard). If you prefer the original version in **Spanish**, you can run `spider_noir_es.py`.
 
 
 
