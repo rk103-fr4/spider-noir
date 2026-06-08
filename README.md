@@ -145,12 +145,12 @@ Commands are copied to clipboard. Paste in your terminal with `Ctrl+Shift+V`.
 
 ```
 ┌─────────────┐      ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│  Subfinder   │────►│    Katana    │────►│     ffuf     │────►│  SVG Graph   │
-│  (passive)   │     │  (crawling)  │     │  (fuzzing)   │     │ (interactive)│
-│              │     │              │     │              │     │              │
-│ Subdomains   │     │ Visible URLs │     │ Hidden paths │     │ All combined │
-│ from public  │     │ from HTML/JS │     │ by wordlist  │     │ + actions    │
-│ sources      │     │ links        │     │ brute force  │     │ panel        │
+│  Subfinder  │────► │    Katana    │────►│     ffuf     │────►│  SVG Graph   │
+│  (passive)  │      │  (crawling)  │     │  (fuzzing)   │     │ (interactive)│
+│             │      │              │     │              │     │              │
+│ Subdomains  │      │ Visible URLs │     │ Hidden paths │     │ All combined │
+│ from public │      │ from HTML/JS │     │ by wordlist  │     │ + actions    │
+│ sources     │      │ links        │     │ brute force  │     │ panel        │
 └─────────────┘      └──────────────┘     └──────────────┘     └──────────────┘
 ```
 
