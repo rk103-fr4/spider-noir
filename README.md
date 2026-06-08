@@ -1,7 +1,7 @@
 # 🕷 Spider Noir
 
 
-////////////// WORKING FOR AN ENGLISH VERSION, RIGTH NOW ITS JUST IN SPANISH //////////////
+////////////// WORKING FOR AN ENGLISH VERSION, RIGHT NOW ITS JUST IN SPANISH //////////////
 
 
 **Recon pipeline for web pentesting that unifies subdomain enumeration, crawling and fuzzing into an interactive SVG knowledge graph.**
