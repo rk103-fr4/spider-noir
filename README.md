@@ -123,6 +123,52 @@ Auto-calib  : No (WAF interference)
 No forms    : Yes (if program prohibits)
 Node limit  : 300
 ```
+📝 Step-by-Step Walkthrough
+When you launch the script, it will guide you through an interactive configuration wizard. Here is a real execution example targeting a Hack The Box machine:
+
+$ python3 spider_noir.py
+
+[?] Custom identification headers (Press Enter to skip): 
+[?] Rate limit in req/second [0 = unlimited]: 0
+[?] Does the program strictly prohibit submitting/testing forms? (y/N): n
+
+━━━━━━━━━━━━━━━━━━━━━━━━━  GLOBAL TARGET  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[?] Target URL or IP address: http://10.129.42.195
+[?] Port [Enter = inferred from schema]: 80
+
+[?] Path to scope configuration file (Leave empty to skip): 
+
+[?] Enable subfinder passive execution? (y/N): n
+
+━━━━━━━━━━━━━━━━━━━━━━  BLOCK 1 — KATANA CRAWLER  ━━━━━━━━━━━━━━━━━━━━━━
+[?] Max execution duration timeout in seconds per scope [300]: 60
+[?] Manually inject EXTRA VHOSTs/Subdomains for Katana? (y/N): n
+
+━━━━━━━━━━━━━━━━━━━━━━  BLOCK 2 — FFUF FUZZER  ━━━━━━━━━━━━━━━━━━━━━━━━━
+[?] Mandatory DIRECTORY wordlist path [Press Enter for common.txt]: 
+[*] Autodetected default system list: /usr/share/wordlists/dirb/common.txt
+[?] Enable ffuf auto-calibration filter? (-ac) [Y/n]: y
+[?] Manually inject EXTRA VHOSTs/Subdomains for FFUF? (y/N): n
+[?] Target extension filters to test: .php
+
+━━━━━━━━━━━━━━━━━━━━━━  BLOCK 3 — SCOPE ASSIGNMENT  ━━━━━━━━━━━━━━━━━━━━
+[?] Manual exact domain rules to append: 
+[?] Manual wildcard rules to append: 
+[?] Custom strict Advanced Scope RegEx matching pattern: 
+
+━━━━━━━━━━━━━━━━━━━━━━  BLOCK 4 — GRAPH LAYOUT CONFIG  ━━━━━━━━━━━━━━━━━
+[?] Max Katana path mapping depth levels [2]: 2
+[?] Total canvas Node limit allocation allowed [300]: 200
+
+━━━━━━━━━━━━━━━━━━━━━━━━━  SESSION PROFILE SUMMARY  ━━━━━━━━━━━━━━━━━━━━━━━━━
+  Target Scope Host: http://10.129.42.195 (Port 80)
+  Fuzzer Wordlist  : /usr/share/wordlists/dirb/common.txt
+  Output Directory : /home/kali/tools/spider-noir/recon_10_129_42_195_20260608
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[?] Launch discovery engine pipeline? (Y/n): y
+
+Once confirmed, the pipeline automated tools will run sequentially, saving all JSON results and exporting the definitive recon_graph_*.html inside the newly created session folder.
 
 ---
 
