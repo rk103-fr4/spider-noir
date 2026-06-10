@@ -1,8 +1,6 @@
 # 🕷 Spider Noir
 
-
 > 🌐 **Language Note:** The main script (`spider_noir.py`) features an interactive interface and console logs entirely in **English** (industry standard). If you prefer the original version in **Spanish**, you can run `spider_noir_es.py`.
-
 
 
 **Recon pipeline for web pentesting that unifies subdomain enumeration, crawling and fuzzing into an interactive SVG knowledge graph.**
@@ -57,26 +55,10 @@ The graph shows the target's structure at a glance: which paths exist, what tech
 | pyvis | Graph data structure | `pip install pyvis` |
 | rich | Terminal UI | `pip install rich` |
 
-## 🌐 Available Versions
-
-This framework is maintained in two language variations:
-- **`spider_noir.py` (Default):** Full internationalized version with all interactive wizard prompts, terminal outputs, and graph console layout in **English**.
-- **`spider_noir_es.py`:** The original development version featuring all prompts, execution logs, and interface elements in **Spanish**.
-
-To run your preferred version, simply execute:
-```bash
-# To launch the English version
-python3 spider_noir.py
-
-# To launch the Spanish version
-python3 spider_noir_es.py
-
-
-
 ### Quick start
 
 ```bash
-git clone https://github.com/rk103-fr4/spider-noir.git
+git clone https://github.com/rk103/spider-noir.git
 cd spider-noir
 
 # Install Python deps
@@ -157,21 +139,57 @@ Commands are copied to clipboard. Paste in your terminal with `Ctrl+Shift+V`.
 
 ---
 
-## Architecture
+## Drill-Down Mode (v2.0)
+
+After the initial scan, Spider Noir shows an interactive menu with all discovered nodes:
 
 ```
-┌─────────────┐      ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│  Subfinder  │────► │    Katana    │────►│     ffuf     │────►│  SVG Graph   │
-│  (passive)  │      │  (crawling)  │     │  (fuzzing)   │     │ (interactive)│
-│             │      │              │     │              │     │              │
-│ Subdomains  │      │ Visible URLs │     │ Hidden paths │     │ All combined │
-│ from public │      │ from HTML/JS │     │ by wordlist  │     │ + actions    │
-│ sources     │      │ links        │     │ brute force  │     │ panel        │
-└─────────────┘      └──────────────┘     └──────────────┘     └──────────────┘
+╔═══════════════════════════════════════════════════════════════════╗
+║  🔍 DRILL-DOWN MODE                                              ║
+║  Select a node to explore deeper.                                ║
+╚═══════════════════════════════════════════════════════════════════╝
+
+── SUBDOMAINS ──────────────────────────────────────────────────────
+  [ 1] api.example.com                  23 URLs, 2 ffuf hits
+  [ 2] admin.example.com                 3 URLs, 1 ffuf hit
+
+── TOP DIRECTORIES (by URL count) ─────────────────────────────────
+  [ 3] example.com/checkout/            45 URLs grouped
+  [ 4] example.com/api/v1/              23 URLs grouped
+
+── FFUF FINDINGS ──────────────────────────────────────────────────
+  [ 5] [200] http://example.com/admin
+  [ 6] [403] http://example.com/.git
+
+  Cached results will be reused. Only the selected target will be
+  re-crawled with deeper depth and re-fuzzed.
+
+[?] Drill into node (1-6, Enter to exit): 2
 ```
+
+**How it works:**
+- Select a node → Spider Noir re-crawls only that target with +1 depth
+- Previous results are cached and reused (no redundant scanning)
+- A new focused graph is generated with the selected node as root
+- You can drill down multiple levels progressively
+- Each drill creates its own subdirectory with full results
+
+This turns Spider Noir from a one-shot scanner into a **progressive exploration tool** where you peel back layers of the target one branch at a time.
 
 ---
 
+## Architecture
+
+```
+┌─────────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│  Subfinder   │────►│    Katana     │────►│     ffuf     │────►│  SVG Graph   │
+│  (passive)   │     │  (crawling)  │     │  (fuzzing)   │     │ (interactive)│
+│              │     │              │     │              │     │              │
+│ Subdomains   │     │ Visible URLs │     │ Hidden paths │     │ All combined │
+│ from public  │     │ from HTML/JS │     │ by wordlist  │     │ + actions    │
+│ sources      │     │ links        │     │ brute force  │     │ panel        │
+└─────────────┘     └──────────────┘     └──────────────┘     └──────────────┘
+```
 ## Legal & Ethical Disclaimer
 
 **IMPORTANT NOTICE:** This tool is developed and published strictly for educational purposes, authorized security auditing, and research within controlled laboratory environments. 
@@ -185,9 +203,12 @@ By downloading, cloning, running, or utilizing **Spider Noir**, you agree to the
 
 **Use responsibly. Test only what you own or have explicit permission to hack.**
 
+
+---
+
 ## Author
 
-**rk103** — [github.com/rk103-fr4](https://github.com/rk103-fr4)
+**rk103** — [github.com/rk103](https://github.com/rk103)
 
 ## License
 
