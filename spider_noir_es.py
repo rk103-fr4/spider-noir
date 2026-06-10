@@ -14,7 +14,7 @@
 # ██║ ╚████║╚██████╔╝██║██║  ██║
 # ╚═╝  ╚═══╝ ╚═════╝ ╚═╝╚═╝  ╚═╝
 #
-# Spider Noir — Recon Pipeline v1.0
+# Spider Noir — Recon Pipeline v2.0
 # Autor: rk103
 # Descripción: Framework de recon web que unifica subfinder, katana y ffuf
 #              en un grafo SVG interactivo con panel de acciones.
@@ -61,7 +61,7 @@ try:
     console = Console()
 except ImportError:
     RICH_AVAILABLE = False
-    console = None
+    console = Ninguno
     print("\n[!] rich no está instalado (progreso visual desactivado). Ejecutá: pip install rich")
 
 
@@ -207,7 +207,7 @@ def banner():
     print(f"\033[38;5;240m  {sep}\033[0m")
 
     # ── Firma del autor y versión ────────────────────────────────────────────
-    version  = "v1.0"
+    version  = "v2.0"
     author   = "rk103"
     year     = datetime.now().strftime("%Y")
 
@@ -242,7 +242,7 @@ def check_tool(tool_name: str) -> bool:
     Verifica si una herramienta externa está disponible en el PATH del sistema.
     Retorna True si existe, False si no.
     """
-    if shutil.which(tool_name) is None:
+    if shutil.which(tool_name) is Ninguno:
         log("WARN", f"'{tool_name}' no encontrado en PATH. Instalalo antes de continuar.")
         return False
     log("OK", f"'{tool_name}' encontrado en PATH.")
@@ -420,7 +420,7 @@ def collect_inputs() -> dict:
 
       BLOQUE 0a — Perfil del tester: headers de identificación y rate limit.
       BLOQUE 0  — Target global (URL + puerto): base común a todo el pipeline.
-      BLOQUE 0b — Subfinder: enumeración pasiva de subdominios.
+      BLOQUE 0b — Subfinder: enumeración pasiva de subdomains.
       BLOQUE 1  — Katana (Crawler): qué hosts crawlear. SIN wordlist.
       BLOQUE 2  — ffuf (Fuzzer): qué hosts fuzzear + wordlist obligatoria.
       BLOQUE 3  — Scope: filtro de URLs aplicado a Katana.
@@ -448,8 +448,8 @@ def collect_inputs() -> dict:
     # Requerido por algunos programas BB para distinguir tráfico legítimo.
     # Podés ingresar múltiples headers separados por coma:
     #   X-HackerOne-Research: tu-usuario, X-Bug-Bounty: true
-    print("  \033[38;5;240m  Algunos programas BB requieren identificar tu tráfico con un header\033[0m")
-    print("  \033[38;5;240m  HTTP custom. Ej: HackerOne pide X-HackerOne-Research: tu-usuario\033[0m\n")
+    print("  \033[38;5;240m  Algunos programas BB requieren identificar tu tráfico con un\033[0m")
+    print("  \033[38;5;240m  header HTTP custom. Ej: HackerOne pide X-HackerOne-Research: tu-usuario\033[0m\n")
 
     headers_input = input(
         "  \033[96m[?]\033[0m Headers de identificación (Enter para omitir)\n"
@@ -474,7 +474,7 @@ def collect_inputs() -> dict:
         config["custom_headers"] = raw_headers
         log("OK", f"Headers configurados: {raw_headers}")
     else:
-        log("INFO", "Sin headers de identificación. Continúa sin headers custom.")
+        log("INFO", "Sin headers de identificación. Continuando sin headers custom.")
 
     # ── Rate limit (requests por segundo) ────────────────────────────────────
     # Controla la agresividad del scanner. Valores de referencia:
@@ -486,7 +486,7 @@ def collect_inputs() -> dict:
     print("  \033[38;5;240m  Algunos programas BB especifican un máximo (ej: Gogo: 10 req/s)\033[0m\n")
 
     rate_input = input(
-        "  \033[96m[?]\033[0m Rate limit en req/segundo [0 = sin límite / default de cada tool]\n"
+        "  \033[96m[?]\033[0m Rate limit en req/segundo [0 = sin límite / defaults de cada tool]\n"
         "      Conservador BB: 10  |  Moderado: 30  |  HTB/lab: 0 > "
     ).strip()
 
@@ -494,7 +494,7 @@ def collect_inputs() -> dict:
         config["rate_limit"] = int(rate_input) if rate_input else 0
     except ValueError:
         config["rate_limit"] = 0
-        log("WARN", "Valor inválido, sin rate limit (se usan defaults de cada herramienta).")
+        log("WARN", "Valor inválido, sin rate limit (usando defaults).")
 
     if config["rate_limit"] > 0:
         log("OK", f"Rate limit: {config['rate_limit']} req/s "
@@ -508,11 +508,11 @@ def collect_inputs() -> dict:
     print()
     no_forms_input = input(
         "  \033[96m[?]\033[0m ¿El programa prohíbe enviar formularios? (s/N)\n"
-        "      Deshabilita Hydra y SQLMap-forms en el panel de acciones del grafo > "
+        "      Deshabilita Hydra y SQLMap-forms en el panel de acciones > "
     ).strip().lower()
-    config["no_forms"] = no_forms_input in ("s", "si", "sí", "y", "yes")
+    config["no_forms"] = no_forms_input in ("y", "yes", "s", "si", "sí")
     if config["no_forms"]:
-        log("WARN", "Formularios deshabilitados — Hydra y SQLMap-forms no disponibles en el grafo.")
+        log("WARN", "Formularios deshabilitados — Hydra y SQLMap-forms no disponibles.")
 
     # ══════════════════════════════════════════════════════════════════════════
     # BLOQUE 0 — TARGET GLOBAL
@@ -556,7 +556,7 @@ def collect_inputs() -> dict:
     print("\033[38;5;39m  ╚═══════════════════════════════════════════════════════════════════╝\033[0m\n")
 
     print("  \033[38;5;240m  Descargá el scope desde:\033[0m")
-    print("  \033[38;5;240m    HackerOne → programa → Policy → Download CSV\033[0m")
+    print("  \033[38;5;240m    HackerOne → program → Policy → Download CSV\033[0m")
     print("  \033[38;5;240m    Burp Suite → Target → Scope → Save to file\033[0m\n")
 
     scope_file_input = input(
@@ -616,8 +616,8 @@ def collect_inputs() -> dict:
                 log("INFO", f"  Ignorados (no-web): {parsed['skipped'][:5]}")
 
     # ══════════════════════════════════════════════════════════════════════════
-    # BLOQUE 0b — SUBFINDER (Enumeración de subdominios) — OPCIONAL
-    # Para targets de Bug Bounty corporativos, enumerar subdominios antes de
+    # BLOQUE 0b — SUBFINDER (Enumeración de subdomains) — OPCIONAL
+    # Para targets de Bug Bounty corporativos, enumerar subdomains antes de
     # crawlear es fundamental: admin., api., dev., staging. tienen mucha más
     # superficie de ataque que www. y mucho menos ruido.
     # Requiere: go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
@@ -631,17 +631,17 @@ def collect_inputs() -> dict:
 
     # Separar el texto explicativo del prompt de input para que quede claro
     # dónde escribir. Verificar también si subfinder está instalado antes de preguntar.
-    subfinder_available = shutil.which("subfinder") is not None
+    subfinder_available = shutil.which("subfinder") is not Ninguno
     if not subfinder_available:
         print("  \033[93m[!]\033[0m subfinder no encontrado en PATH — se saltará esta fase.")
         print("      Instalación: go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest\n")
 
     print("  \033[38;5;240m──────────────────────────────────────────────────────────────────────\033[0m")
     use_subfinder = input("  \033[96m[?]\033[0m ¿Ejecutar subfinder? (s/N): ").strip().lower()
-    config["use_subfinder"] = (use_subfinder in ("s", "si", "sí", "y", "yes")) and subfinder_available
+    config["use_subfinder"] = (use_subfinder in ("y", "yes", "s", "si", "sí")) and subfinder_available
     config["subfinder_results"] = []
 
-    if use_subfinder in ("s", "si", "sí", "y", "yes") and not subfinder_available:
+    if use_subfinder in ("y", "yes", "s", "si", "sí") and not subfinder_available:
         log("WARN", "Elegiste 's' pero subfinder no está instalado. Se saltará la fase 0.")
     elif config["use_subfinder"]:
         # Extraer el dominio raíz del target para pasarlo a subfinder
@@ -656,8 +656,8 @@ def collect_inputs() -> dict:
         log("OK", f"subfinder activado → dominio raíz: {root_domain}")
 
         # ── Filtro 1: palabras clave ─────────────────────────────────────────
-        # Subfinder puede devolver miles de subdominios en targets corporativos.
-        # El filtro de keywords conserva solo los subdominios que contienen
+        # Subfinder puede devolver miles de subdomains en targets corporativos.
+        # El filtro de keywords conserva solo los subdomains que contienen
         # al menos una de las palabras clave ingresadas.
         # Palabras típicamente interesantes: admin, api, dev, staging, test,
         # internal, vpn, portal, dashboard, jenkins, gitlab, jira, kibana.
@@ -665,8 +665,8 @@ def collect_inputs() -> dict:
         kw_input = input(
             "  \033[96m[?]\033[0m Filtrar subdominios por palabras clave (recomendado)\n"
             "      Solo se procesarán subdominios que contengan alguna de estas palabras.\n"
-            "      [Enter = sin filtro de keywords, procesar todos]\n"
-            "      ej: admin,api,dev,staging,test,portal,internal,vpn > "
+            "      [Enter = sin filtro, procesar todos]\n"
+            "      e.g. admin,api,dev,staging,test,portal,internal,vpn > "
         ).strip()
 
         config["subfinder_keywords"] = []
@@ -675,16 +675,16 @@ def collect_inputs() -> dict:
             config["subfinder_keywords"] = keywords
             log("OK", f"Keywords de filtro: {keywords}")
         else:
-            log("INFO", "Sin filtro de keywords — se procesarán todos los subdominios.")
+            log("INFO", "Sin filtro — se procesarán todos los subdominios.")
 
         # ── Filtro 2: límite máximo ──────────────────────────────────────────
         # Incluso con keywords, en targets grandes pueden quedar muchos.
-        # El límite evita crawlear/fuzzear cientos de subdominios en una sesión.
-        # Los subdominios se ordenan por longitud (más cortos primero) antes
+        # El límite evita crawlear/fuzzear cientos de subdomains en una sesión.
+        # Los subdomains se ordenan por longitud (más cortos primero) antes
         # de aplicar el límite: admin.target.com antes que qastg-admin.target.com.
         print()
         limit_input = input(
-            "  \033[96m[?]\033[0m Límite máximo de subdominios a procesar [20]\n"
+            "  \033[96m[?]\033[0m Máximo de subdominios a procesar [20]\n"
             "      Los más cortos (más importantes) se priorizan automáticamente.\n"
             "      [0 = sin límite, no recomendado para targets grandes] > "
         ).strip()
@@ -720,7 +720,7 @@ def collect_inputs() -> dict:
         for sv in subfinder_vhosts:
             print(f"       \033[96m→ {sv}\033[0m")
         print()
-        print("  \033[38;5;240m  Podés agregar VHOSTs adicionales (HTB) o dejar vacío si subfinder fue suficiente.\033[0m\n")
+        print("  \033[38;5;240m  Podés agregar VHOSTs extra (HTB) o dejar vacío si subfinder fue suficiente.\033[0m\n")
     
     # Timeout global por scope de Katana
     print()
@@ -736,7 +736,7 @@ def collect_inputs() -> dict:
     log("OK", f"Timeout de Katana: {config['katana_timeout']}s por scope (stall: 45s, WAF: 20x403)")
 
     use_k = input("\n  \033[96m[?]\033[0m ¿Agregar VHOSTs/subdominios EXTRA para Katana? (s/N): ").strip().lower()
-    config["use_katana_vhosts"] = use_k in ("s", "si", "sí", "y", "yes")
+    config["use_katana_vhosts"] = use_k in ("y", "yes", "s", "si", "sí")
     config["katana_vhosts"] = []
 
     if config["use_katana_vhosts"]:
@@ -761,7 +761,7 @@ def collect_inputs() -> dict:
     print("\033[38;5;214m  ║  Pasada 2+: wordlist de archivos    →  /FUZZ.ext (opcional)      ║\033[0m")
     print("\033[38;5;214m  ╚═══════════════════════════════════════════════════════════════════╝\033[0m\n")
 
-    # ── Wordlist de directorios (Pasada 1, obligatoria) ──────────────────────
+    # ── Wordlist de directories (Pass 1, obligatoria) ──────────────────────
     # Contiene palabras pensadas como nombres de ruta/directorio.
     # Ej de listas recomendadas:
     #   /usr/share/wordlists/dirb/common.txt
@@ -806,15 +806,15 @@ def collect_inputs() -> dict:
         "      n → sin filtro (recomendado si ffuf devuelve 0 resultados con -ac) > "
     ).strip().lower()
     config["ffuf_ac"] = ac_input not in ("n", "no")
-    log("OK", f"ffuf auto-calibración: {'ACTIVADA' if config['ffuf_ac'] else 'DESACTIVADA'}")
+    log("OK", f"ffuf auto-calibration: {'ACTIVADA' if config['ffuf_ac'] else 'DESACTIVADA'}")
 
     # Mostrar los VHOSTs ya cargados por subfinder (si corrió)
     if subfinder_vhosts:
         print(f"\n  \033[92m[+]\033[0m Subfinder ya agregó {len(subfinder_vhosts)} subdominio(s) al fuzzing.")
-        print("  \033[38;5;240m  Podés agregar VHOSTs adicionales (HTB) o dejar vacío si subfinder fue suficiente.\033[0m\n")
+        print("  \033[38;5;240m  Podés agregar VHOSTs extra (HTB) o dejar vacío si subfinder fue suficiente.\033[0m\n")
 
     use_f = input("\n  \033[96m[?]\033[0m ¿Agregar VHOSTs/subdominios EXTRA para ffuf? (s/N): ").strip().lower()
-    config["use_ffuf_vhosts"] = use_f in ("s", "si", "sí", "y", "yes")
+    config["use_ffuf_vhosts"] = use_f in ("y", "yes", "s", "si", "sí")
     config["ffuf_vhosts"] = []
 
     if config["use_ffuf_vhosts"]:
@@ -823,9 +823,9 @@ def collect_inputs() -> dict:
             log("WARN", "Lista vacía. No se agregaron VHOSTs extra.")
             config["use_ffuf_vhosts"] = False
 
-    # ── Extensiones + Wordlist de archivos (Pasadas 2..N, opcionales) ────────
+    # ── Extensiones + Wordlist de archivos (Passs 2..N, opcionales) ────────
     # Si el usuario quiere probar extensiones, puede especificar una wordlist
-    # de archivos separada (nombres pensados para archivos, no directorios).
+    # de archivos separada (nombres pensados para archivos, no directories).
     # Ej de listas recomendadas:
     #   /usr/share/seclists/Discovery/Web-Content/raft-large-files.txt
     #   /usr/share/seclists/Discovery/Web-Content/common-files.txt
@@ -833,7 +833,7 @@ def collect_inputs() -> dict:
     print("  \033[38;5;214m── Pasadas adicionales: Archivos (/FUZZ.ext) ───────────────────────\033[0m\n")
 
     ext_input = input(
-        "  \033[96m[?]\033[0m Extensiones a probar (Enter para omitir pasadas de archivos)\n"
+        "  \033[96m[?]\033[0m Extensiones a probar (Enter para omitir)\n"
         "      Tecnología desconocida : .php,.html,.bak,.zip,.txt,.xml\n"
         "      PHP                    : .php,.php5,.phtml,.bak,.old\n"
         "      Java / JSP             : .jsp,.jspa,.do,.action,.war\n"
@@ -843,7 +843,7 @@ def collect_inputs() -> dict:
     ).strip()
 
     config["ffuf_extensions"] = []
-    config["wordlist_files"]  = None   # None = usar wordlist_dirs como fallback
+    config["wordlist_files"]  = Ninguno   # Ninguno = usar wordlist_dirs como fallback
 
     if ext_input:
         # Normalizar extensiones: asegurar que empiecen con punto
@@ -862,27 +862,27 @@ def collect_inputs() -> dict:
         # readme, db, database — sin extensión, que ffuf combina con el .ext.
         print()
         wordlist_files = input(
-            "  \033[96m[?]\033[0m Wordlist de ARCHIVOS para las pasadas con extensión\n"
+            "  \033[96m[?]\033[0m Wordlist de ARCHIVOS para pasadas con extensión\n"
             "      Palabras pensadas como nombres de archivo: config, index, db\n"
-            "      [Enter = reutilizar la wordlist de directorios como fallback]: "
+            "      [Enter = reutilizar wordlist de directorios]: "
         ).strip()
 
         if wordlist_files:
             if not Path(wordlist_files).is_file():
                 log("WARN", f"Archivo no encontrado: {wordlist_files}. Usando wordlist de directorios.")
-                config["wordlist_files"] = None
+                config["wordlist_files"] = Ninguno
             else:
                 config["wordlist_files"] = wordlist_files
-                log("OK", f"Wordlist archivos: {wordlist_files} ({Path(wordlist_files).stat().st_size // 1024} KB)")
+                log("OK", f"File wordlist: {wordlist_files} ({Path(wordlist_files).stat().st_size // 1024} KB)")
         else:
             log("INFO", "Wordlist de archivos: reutilizando wordlist de directorios.")
 
         total_passes = 1 + len(exts)
         wl_files_label = config["wordlist_files"] or config["wordlist"]
         log("INFO", f"ffuf correrá {total_passes} pasada(s) en total:")
-        log("INFO", f"  Pasada 1      : {config['wordlist']}  →  /FUZZ")
+        log("INFO", f"  Pass 1      : {config['wordlist']}  →  /FUZZ")
         for ext in exts:
-            log("INFO", f"  Pasada ext    : {wl_files_label}  →  /FUZZ{ext}")
+            log("INFO", f"  Pass ext    : {wl_files_label}  →  /FUZZ{ext}")
     else:
         log("INFO", "Sin extensiones: ffuf solo hará la pasada de directorios.")
 
@@ -893,7 +893,7 @@ def collect_inputs() -> dict:
     # ══════════════════════════════════════════════════════════════════════════
     # BLOQUE 3 — SCOPE
     # Filtra qué URLs Katana puede seguir. Soporta 3 formatos combinables:
-    #   [A] Dominios exactos   → hostname exacto (target.htb, 10.10.11.20)
+    #   [A] Dominios exact   → hostname exacto (target.htb, 10.10.11.20)
     #   [B] Wildcards BB       → *.mheducation.com  (cualquier subdominio)
     #   [C] Regex custom       → .*\.htb$  (patrón libre sobre la URL completa)
     # ══════════════════════════════════════════════════════════════════════════
@@ -916,11 +916,11 @@ def collect_inputs() -> dict:
         if file_exact:
             print(f"       Exactos   : {', '.join(file_exact[:5])}"
                   + (f" (+{len(file_exact)-5} más)" if len(file_exact) > 5 else ""))
-        print("  \033[38;5;240m  Podés agregar más abajo o dejar vacío para usar solo el del archivo.\033[0m\n")
+        print("  \033[38;5;240m  Podés agregar más o dejar vacío para usar solo el del archivo.\033[0m\n")
 
-    # [A] Dominios exactos
+    # [A] Dominios exact
     scope_in = input(
-        "  \033[96m[?]\033[0m [A] Dominios exactos adicionales (Enter = usar los del archivo o target base)\n"
+        "  \033[96m[?]\033[0m [A] Dominios exactos adicionales (Enter = usar del archivo o target base)\n"
         "      ej: target.htb,admin.htb,10.10.11.20 > "
     ).strip()
 
@@ -936,8 +936,8 @@ def collect_inputs() -> dict:
             manual_exact
         ))
     else:
-        # Incluir: host base + VHOSTs manuales + subdominios de subfinder
-        # Los subdominios de subfinder se añadieron DESPUÉS de que se configuró
+        # Incluir: host base + VHOSTs manuales + subdomains de subfinder
+        # Los subdomains de subfinder se añadieron DESPUÉS de que se configuró
         # all_vhosts, así que hay que incluirlos explícitamente aquí.
         subfinder_subs = config.get("subfinder_results", [])
         scope_domains  = list(dict.fromkeys(
@@ -1003,7 +1003,7 @@ def collect_inputs() -> dict:
         "      [Enter para omitir — recomendado si ya usaste A o B] > "
     ).strip()
 
-    config["scope_regex"] = None
+    config["scope_regex"] = Ninguno
     if rx_in:
         try:
             config["scope_regex"] = re.compile(rx_in, re.IGNORECASE)
@@ -1017,7 +1017,7 @@ def collect_inputs() -> dict:
         (1 if config["scope_regex"] else 0)
     )
     log("OK", f"Scope: {total_rules} reglas activas  "
-              f"({len(config['scope_domains'])} exactos | "
+              f"({len(config['scope_domains'])} exact | "
               f"{len(config['scope_wildcards'])} wildcards | "
               f"{'1 regex' if config['scope_regex'] else '0 regex'})")
 
@@ -1030,13 +1030,13 @@ def collect_inputs() -> dict:
     # ══════════════════════════════════════════════════════════════════════════
     print()
     print("\033[38;5;71m  ╔═══════════════════════════════════════════════════════════════════╗\033[0m")
-    print("\033[38;5;71m  ║  BLOQUE 4 — GRAFO  (visualización PyVis)                         ║\033[0m")
+    print("\033[38;5;71m  ║  BLOQUE 4 — GRAFO  (Visualización SVG)                         ║\033[0m")
     print("\033[38;5;71m  ║  Profundidad 2 → muestra /dir/subdir, colapsa el resto.          ║\033[0m")
     print("\033[38;5;71m  ║  Los hallazgos de ffuf NUNCA se colapsan.                        ║\033[0m")
     print("\033[38;5;71m  ║  Límite de nodos: garantiza rendimiento en el browser.           ║\033[0m")
     print("\033[38;5;71m  ╚═══════════════════════════════════════════════════════════════════╝\033[0m\n")
 
-    depth_in = input("  \033[96m[?]\033[0m Profundidad máxima de nodos Katana en el grafo [2]: ").strip()
+    depth_in = input("  \033[96m[?]\033[0m Profundidad máxima de nodos Katana [2]: ").strip()
     try:
         config["graph_depth"] = max(1, int(depth_in)) if depth_in else 2
     except ValueError:
@@ -1046,7 +1046,7 @@ def collect_inputs() -> dict:
 
     # ── Límite máximo de nodos ───────────────────────────────────────────────
     # El browser empieza a sufrir con más de ~500 nodos en el layout jerárquico.
-    # Por encima de 1000 nodos el HTML puede tardar minutos en cargar o trabarse.
+    # Por encima de 1000 nodos el HTML puede tardar minutes en cargar o trabarse.
     # Prioridad de recorte: se eliminan nodos de Katana con menos URLs agrupadas,
     # preservando siempre: seed, VHOSTs, subfinder y todos los nodos de ffuf.
     #
@@ -1057,7 +1057,7 @@ def collect_inputs() -> dict:
     #   Bug Bounty (multi-scope) → 500-5000 nodos → límite 300
     print()
     limit_in = input(
-        "  \033[96m[?]\033[0m Límite máximo de nodos en el grafo [300]\n"
+        "  \033[96m[?]\033[0m Máximo de nodos en el grafo [300]\n"
         "      HTB simple: 200  |  HTB complejo: 500  |  Bug Bounty multi-scope: 300\n"
         "      [0 = sin límite, no recomendado con múltiples subdominios] > "
     ).strip()
@@ -1089,32 +1089,32 @@ def collect_inputs() -> dict:
     _fw = len(config.get("scope_file_wildcards", []))
     _fe = len(config.get("scope_file_exact", []))
     if _fw or _fe:
-        print(f"  \033[38;5;39m[SCOPE  ]\033[0m  Archivo: \033[96m{_fw} wildcards + {_fe} exactos\033[0m")
+        print(f"  \033[38;5;39m[SCOPE  ]\033[0m  File   : \033[96m{_fw} wildcards + {_fe} exact\033[0m")
     print()
     if config.get("use_subfinder"):
-        print(f"  \033[38;5;208m[SUBFINDER]\033[0m Enumeración pasiva de subdominios")
-        print(f"           Dominio  : \033[96m{config.get('subfinder_domain', config['host'])}\033[0m")
+        print(f"  \033[38;5;208m[SUBFINDER]\033[0m Enumeración pasiva de subdomains")
+        print(f"           Domain   : \033[96m{config.get('subfinder_domain', config['host'])}\033[0m")
         _kw  = ", ".join(config.get("subfinder_keywords", [])) or "Sin filtro"
         _lim = str(config.get("subfinder_limit", 20)) if config.get("subfinder_limit") else "Sin límite"
         print(f"           Keywords : \033[96m{_kw}\033[0m")
-        print(f"           Límite   : \033[96m{_lim} subdominios\033[0m")
+        print(f"           Limit    : \033[96m{_lim} subdomains\033[0m")
     print()
     print(f"  \033[38;5;51m[KATANA]\033[0m  Crawler autónomo, sin wordlist")
     print(f"           VHOSTs  : \033[96m{config['katana_vhosts'] if config['katana_vhosts'] else 'Solo target base'}\033[0m")
     print()
-    print(f"  \033[38;5;214m[FFUF  ]\033[0m  Fuzzer de directorios y archivos")
+    print(f"  \033[38;5;214m[FFUF  ]\033[0m  Fuzzer de directories y archivos")
     print(f"           WL dirs    : \033[96m{config['wordlist']}\033[0m")
     _wlf = config.get('wordlist_files') or "(igual que dirs)"
-    print(f"           WL archivos: \033[96m{_wlf}\033[0m")
+    print(f"           WL files   : \033[96m{_wlf}\033[0m")
     print(f"           VHOSTs     : \033[96m{config['ffuf_vhosts'] if config['ffuf_vhosts'] else 'Solo target base'}\033[0m")
     _ext = config.get('ffuf_extensions', [])
-    _ext_str = ", ".join(_ext) if _ext else "Solo directorios (pasada única)"
+    _ext_str = ", ".join(_ext) if _ext else "Solo directories (pasada única)"
     _pass_str = f"1 dirs + {len(_ext)} archivos" if _ext else "1 pasada"
-    print(f"           Extensiones: \033[96m{_ext_str}\033[0m  \033[90m({_pass_str})\033[0m")
+    print(f"           Extensions : \033[96m{_ext_str}\033[0m  \033[90m({_pass_str})\033[0m")
     _ac_str = "ACTIVADA" if config.get("ffuf_ac", True) else "DESACTIVADA (sin filtro)"
     print(f"           Auto-calib : \033[96m{_ac_str}\033[0m")
     print()
-    print(f"  \033[38;5;99m[SCOPE ]\033[0m  Filtro de URLs para Katana")
+    print(f"  \033[38;5;99m[SCOPE ]\033[0m  URL filter for Katana")
     print(f"           Exactos : \033[96m{config['scope_domains']}\033[0m")
     wc_lbl = config['scope_wildcards'] if config['scope_wildcards'] else ['Ninguno']
     print(f"           Wildcard: \033[96m{wc_lbl}\033[0m")
@@ -1122,7 +1122,7 @@ def collect_inputs() -> dict:
     print(f"           Regex   : \033[96m{rx_lbl}\033[0m")
     print()
     _lim_g = str(config['graph_node_limit']) if config.get('graph_node_limit') else 'Sin límite'
-    print(f"  \033[38;5;71m[GRAFO ]\033[0m  Profundidad: \033[96m{config['graph_depth']} niveles\033[0m  |  Límite: \033[96m{_lim_g} nodos\033[0m")
+    print(f"  \033[38;5;71m[GRAPH ]\033[0m  Depth: \033[96m{config['graph_depth']} niveles\033[0m  |  Limit: \033[96m{_lim_g} nodos\033[0m")
     print(f"           Output  : \033[96m{output_dir.resolve()}\033[0m")
     print("\033[93m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m\n")
 
@@ -1197,7 +1197,7 @@ def is_in_scope(url: str, config: dict) -> bool:
     return False
 
 
-def _make_findings_table(tool: str, findings: list, scope: str):
+def _make_hallazgos_table(tool: str, hallazgos: list, scope: str):
     """
     Construye una tabla Rich con los últimos hallazgos en tiempo real.
     Se renderiza dentro del panel Live durante la ejecución.
@@ -1214,7 +1214,7 @@ def _make_findings_table(tool: str, findings: list, scope: str):
     table.add_column("EXTRA", width=18, justify="right", style="dim")
 
     # Mostrar solo los últimos 12 hallazgos para no desbordar la pantalla
-    for item in findings[-12:]:
+    for item in hallazgos[-12:]:
         status = item.get("status", 0)
         url    = item.get("url", "")
         extra  = item.get("content_type", "") or item.get("fuzz_word", "")
@@ -1234,14 +1234,14 @@ def _make_findings_table(tool: str, findings: list, scope: str):
     return table
 
 
-def run_katana(target_url: str, vhost: "str | None", output_dir: Path, config: dict) -> list:
+def run_katana(target_url: str, vhost: "str | Ninguno", output_dir: Path, config: dict) -> list:
     """
     Ejecuta Katana con output en tiempo real usando Popen + lectura línea a línea.
     Muestra un panel Rich con spinner, contador en vivo y tabla de URLs encontradas.
 
     Args:
         target_url : URL base a crawlear (ej: http://10.10.11.20)
-        vhost      : Nombre del virtual host si aplica (ej: admin.htb), None si no.
+        vhost      : Nombre del virtual host si aplica (ej: admin.htb), Ninguno si no.
         output_dir : Directorio donde se guardan los archivos temporales.
         config     : Diccionario global de configuración de la sesión.
 
@@ -1292,7 +1292,7 @@ def run_katana(target_url: str, vhost: "str | None", output_dir: Path, config: d
         with Progress(
             SpinnerColumn(spinner_name="dots2", style="cyan"),
             TextColumn("[bold cyan]KATANA[/] [{task.fields[scope]}]"),
-            BarColumn(bar_width=None, style="cyan", complete_style="bright_cyan"),
+            BarColumn(bar_width=Ninguno, style="cyan", complete_style="bright_cyan"),
             TextColumn("[cyan]{task.fields[found]}[/] URLs"),
             TimeElapsedColumn(),
             TextColumn("[dim]{task.fields[last_url]}[/]"),
@@ -1301,7 +1301,7 @@ def run_katana(target_url: str, vhost: "str | None", output_dir: Path, config: d
         ) as progress:
             task = progress.add_task(
                 "crawling",
-                total=None,       # Total desconocido → barra indeterminada
+                total=Ninguno,       # Total desconocido → barra indeterminada
                 scope=scope_label,
                 found="0",
                 last_url="",
@@ -1309,7 +1309,7 @@ def run_katana(target_url: str, vhost: "str | None", output_dir: Path, config: d
 
             # Timeout global y detección de bloqueo WAF/CDN
             GLOBAL_TIMEOUT  = config.get("katana_timeout", 300)
-            STALL_TIMEOUT   = 45    # segundos sin nueva URL → stall
+            STALL_TIMEOUT   = 45    # seconds sin nueva URL → stall
             BLOCK_THRESHOLD = 20    # 403 consecutivos → bloqueo
 
             try:
@@ -1335,7 +1335,7 @@ def run_katana(target_url: str, vhost: "str | None", output_dir: Path, config: d
                         log("WARN", f"Katana: timeout global de {GLOBAL_TIMEOUT}s para '{scope_label}'")
                         proc.kill(); break
 
-                    # Stall: sin URLs nuevas por STALL_TIMEOUT segundos
+                    # Stall: sin URLs nuevas por STALL_TIMEOUT seconds
                     if time.time() - last_url_time > STALL_TIMEOUT:
                         log("WARN", f"Katana: sin nuevas URLs por {STALL_TIMEOUT}s en '{scope_label}' — abortando scope")
                         proc.kill(); break
@@ -1356,7 +1356,7 @@ def run_katana(target_url: str, vhost: "str | None", output_dir: Path, config: d
                         if status == 403:
                             consecutive_403 += 1
                             if consecutive_403 >= BLOCK_THRESHOLD:
-                                log("WARN", f"Katana: {BLOCK_THRESHOLD} respuestas 403 seguidas en '{scope_label}' — WAF/CDN bloqueando")
+                                log("WARN", f"Katana: {BLOCK_THRESHOLD} respuestas 403 consecutivas en '{scope_label}' — WAF/CDN bloqueando")
                                 log("INFO",  "  Esperá unos minutos antes de volver a correr el framework.")
                                 proc.kill(); blocked = True; break
                         else:
@@ -1469,15 +1469,15 @@ def _count_wordlist_lines(wordlist_path: str) -> int:
         return 0
 
 
-def run_ffuf(target_url: str, vhost: "str | None", wordlist: str,
+def run_ffuf(target_url: str, vhost: "str | Ninguno", wordlist: str,
              output_dir: Path, config: dict,
-             extension: "str | None" = None) -> list:
+             extension: "str | Ninguno" = Ninguno) -> list:
     """
     Ejecuta una pasada de ffuf con barra de progreso en tiempo real.
 
     Puede correr en dos modos según el parámetro 'extension':
-      · extension=None  → Pasada 1: fuzzea /FUZZ  (directorios puros)
-      · extension=".php" → Pasada 2: fuzzea /FUZZ.php  (dirs + extensión)
+      · extension=Ninguno  → Pass 1: fuzzea /FUZZ  (directories puros)
+      · extension=".php" → Pass 2: fuzzea /FUZZ.php  (dirs + extensión)
 
     PROBLEMA RESUELTO: ffuf escribe su progreso al stderr usando \r (retorno de
     carro) en lugar de \n, por lo que 'for line in proc.stderr' bloquea
@@ -1494,7 +1494,7 @@ def run_ffuf(target_url: str, vhost: "str | None", wordlist: str,
         output_dir : Directorio donde se guarda el JSON de resultados.
         config     : Diccionario global de configuración.
         extension  : Extensión a agregar al placeholder FUZZ (ej: ".php").
-                     None = pasada de directorios sin extensión.
+                     Ninguno = pasada de directories sin extensión.
 
     Returns:
         Lista de dicts con las rutas descubiertas y sus metadatos.
@@ -1666,7 +1666,7 @@ def run_ffuf(target_url: str, vhost: "str | None", wordlist: str,
         with Progress(
             SpinnerColumn(spinner_name="dots12", style="bright_yellow"),
             TextColumn("[bold yellow]FFUF[/] [{task.fields[scope]}] [dim]{task.fields[pass_label]}[/]"),
-            BarColumn(bar_width=None, style="yellow", complete_style="bright_yellow"),
+            BarColumn(bar_width=Ninguno, style="yellow", complete_style="bright_yellow"),
             MofNCompleteColumn(),
             TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
             TimeElapsedColumn(),
@@ -1781,21 +1781,21 @@ def run_ffuf(target_url: str, vhost: "str | None", wordlist: str,
 # SECCIÓN 4b: ORQUESTADOR DE PASADAS DE FFUF
 # =============================================================================
 
-def run_ffuf_all_passes(target_url: str, vhost: "str | None",
+def run_ffuf_all_passes(target_url: str, vhost: "str | Ninguno",
                         output_dir: Path, config: dict) -> list:
     """
     Orquesta todas las pasadas de ffuf para un scope dado:
 
-      Pasada 1 (siempre): /FUZZ  → directorios puros
-      Pasada 2..N (opcional): /FUZZ.ext por cada extensión configurada
+      Pass 1 (siempre): /FUZZ  → directories puros
+      Pass 2..N (opcional): /FUZZ.ext por cada extensión configurada
 
     Consolida y deduplica todos los hallazgos en una sola lista,
     marcando cada entry con el campo 'extension' para que el grafo
-    pueda distinguir visualmente entre directorios y archivos.
+    pueda distinguir visualmente entre directories y archivos.
 
     Args:
         target_url : URL base para el fuzzing.
-        vhost      : Virtual host a usar en el header Host, o None.
+        vhost      : Virtual host a usar en el header Host, o Ninguno.
         output_dir : Directorio donde guardar los JSON de resultados.
         config     : Config global con wordlist y ffuf_extensions.
 
@@ -1813,9 +1813,9 @@ def run_ffuf_all_passes(target_url: str, vhost: "str | None",
     log("PHASE", f"ffuf → {total_passes} pasada(s) para '{scope_label}'  "
                  f"[dirs{' + ' + ', '.join(extensions) if extensions else ''}]")
 
-    # ── Pasada 1: directorios puros (/FUZZ) ──────────────────────────────────
-    log("INFO", f"  Pasada 1/{total_passes}: /FUZZ  (directorios)")
-    results = run_ffuf(target_url, vhost, wordlist, output_dir, config, extension=None)
+    # ── Pass 1: directories puros (/FUZZ) ──────────────────────────────────
+    log("INFO", f"  Pass 1/{total_passes}: /FUZZ  (directories)")
+    results = run_ffuf(target_url, vhost, wordlist, output_dir, config, extension=Ninguno)
     for entry in results:
         entry["extension"] = ""          # Sin extensión
         entry["pass"]      = "dirs"
@@ -1824,13 +1824,13 @@ def run_ffuf_all_passes(target_url: str, vhost: "str | None",
             seen_urls.add(url_key)
             all_found.append(entry)
 
-    # ── Pasadas adicionales: una por extensión (/FUZZ.ext) ───────────────────
+    # ── Passs adicionales: una por extensión (/FUZZ.ext) ───────────────────
     # Para las pasadas con extensión se usa wordlist_files si está configurada,
-    # o la wordlist de directorios como fallback si no se especificó ninguna.
+    # o la wordlist de directories como fallback si no se especificó ninguna.
     wordlist_files = config.get("wordlist_files") or wordlist
 
     for i, ext in enumerate(extensions, start=2):
-        log("INFO", f"  Pasada {i}/{total_passes}: /FUZZ{ext}  ({wordlist_files.split('/')[-1]})")
+        log("INFO", f"  Pass {i}/{total_passes}: /FUZZ{ext}  ({wordlist_files.split('/')[-1]})")
         results = run_ffuf(target_url, vhost, wordlist_files, output_dir, config, extension=ext)
         for entry in results:
             entry["extension"] = ext
@@ -1844,7 +1844,7 @@ def run_ffuf_all_passes(target_url: str, vhost: "str | None",
     ext_count  = sum(1 for e in all_found if e["extension"])
     log("OK", f"ffuf total para '{scope_label}': "
               f"{len(all_found)} hallazgos  "
-              f"({dirs_count} directorios | {ext_count} archivos con extensión)")
+              f"({dirs_count} directories | {ext_count} files with extension)")
 
     return all_found
 
@@ -1864,7 +1864,7 @@ def _build_path_tree(urls: list, max_depth: int) -> dict:
         node_path: {
           "entries": [lista de entries originales que caen en este nodo],
           "children": set(paths hijos directos),
-          "parent": path padre o None si es raíz,
+          "parent": path padre o Ninguno si es raíz,
           "depth": profundidad del nodo,
         }
       }
@@ -1897,11 +1897,11 @@ def _build_path_tree(urls: list, max_depth: int) -> dict:
         # Insertar cada nivel del path en el árbol
         for depth in range(len(parts) + 1):
             path_key  = "/" + "/".join(parts[:depth]) if depth > 0 else "/"
-            parent_key = "/" + "/".join(parts[:depth-1]) if depth > 1 else ("/" if depth == 1 else None)
+            parent_key = "/" + "/".join(parts[:depth-1]) if depth > 1 else ("/" if depth == 1 else Ninguno)
 
             ensure_node(path_key, depth, parent_key)
 
-            if parent_key is not None and parent_key in tree:
+            if parent_key is not Ninguno and parent_key in tree:
                 tree[parent_key]["children"].add(path_key)
 
         # Añadir el entry al nodo hoja (último nivel del path)
@@ -1918,7 +1918,7 @@ def build_graph(config: dict, katana_results: dict, ffuf_results: dict) -> Netwo
 
     Cambios respecto a la versión anterior:
       1. Layout JERÁRQUICO (top-down) en lugar de Barnes-Hut radial.
-         Los paths se organizan como un árbol de directorios: /a → /a/b → /a/b/c
+         Los paths se organizan como un árbol de directories: /a → /a/b → /a/b/c
       2. Árbol de paths real: cada nodo cuelga de su directorio padre,
          no todos del seed. Elimina la "explosión solar".
       3. Física SOLO durante estabilización inicial, luego se apaga.
@@ -2125,7 +2125,7 @@ def build_graph(config: dict, katana_results: dict, ffuf_results: dict) -> Netwo
     # En lugar de un pool global (que www consumiría todo), cada scope
     # recibe una cuota igual del presupuesto disponible.
     # Excepción: el target base (www) recibe la mitad de la cuota de los
-    # subdominios — los subdominios son más interesantes para un pentest.
+    # subdomains — los subdomains son más interesantes para un pentest.
     fixed_nodes   = 1 + len(config.get("all_vhosts", [])) + len(config.get("subfinder_results", []))
     ffuf_count    = sum(len(v) for v in ffuf_results.values())
     katana_budget = max(10, node_limit - fixed_nodes - ffuf_count) if node_limit else 999999
@@ -2135,11 +2135,11 @@ def build_graph(config: dict, katana_results: dict, ffuf_results: dict) -> Netwo
     n_scopes            = len(scopes_with_results) or 1
     base_host           = config["host"].lower()
 
-    # El scope base (www) recibe la mitad que los subdominios
+    # El scope base (www) recibe la mitad que los subdomains
     # Fórmula: n_sub scopes * 1 + 1 base * 0.5 = total_parts
     n_sub_scopes  = sum(1 for sl in scopes_with_results if sl.lower() != base_host)
     n_base_scopes = n_scopes - n_sub_scopes
-    total_parts   = n_sub_scopes * 2 + n_base_scopes * 1   # subdominios valen doble
+    total_parts   = n_sub_scopes * 2 + n_base_scopes * 1   # subdomains valen doble
     part_size     = max(5, katana_budget // total_parts) if total_parts else katana_budget
 
     quota_per_scope = {}
@@ -2150,7 +2150,7 @@ def build_graph(config: dict, katana_results: dict, ffuf_results: dict) -> Netwo
             quota_per_scope[sl] = part_size * 2      # cuota subdominio (mayor)
 
     log("INFO", f"Presupuesto Katana: {katana_budget} nodos | "
-                f"{n_scopes} scopes | cuota base={part_size} | cuota subdominios={part_size*2}")
+                f"{n_scopes} scopes | cuota base={part_size} | cuota subdomains={part_size*2}")
 
     # ── Construir árbol por scope y aplicar cuota individual ─────────────────
     # Cada scope selecciona sus mejores nodos dentro de su cuota.
@@ -2396,8 +2396,8 @@ def build_graph(config: dict, katana_results: dict, ffuf_results: dict) -> Netwo
 
 def _norm_color(c, group: str = "", node_id: str = "") -> str:
     """Normaliza el color de PyVis a string CSS.
-    PyVis puede guardar el color como string, dict, o None.
-    Si es None (PyVis lo descarta), se infiere del grupo del nodo.
+    PyVis puede guardar el color como string, dict, o Ninguno.
+    Si es Ninguno (PyVis lo descarta), se infiere del grupo del nodo.
     """
     # Intentar extraer el color directamente
     if isinstance(c, str) and c.startswith("#"):
@@ -2407,7 +2407,7 @@ def _norm_color(c, group: str = "", node_id: str = "") -> str:
         if isinstance(v, str) and v.startswith("#"):
             return v
 
-    # Color es None o inválido → inferir del grupo del nodo
+    # Color es Ninguno o inválido → inferir del grupo del nodo
     if group == "seed":
         return "#FFD700"       # Dorado
     if group in ("vhost", "subfinder"):
@@ -2458,7 +2458,7 @@ def export_graph(net, config: dict) -> Path:
         dst = str(edge["to"])
         ec  = edge.get("color")
         # Si PyVis perdió el color del edge, heredar del nodo destino
-        if ec is None:
+        if ec is Ninguno:
             ec = _ncmap.get(dst, "#444444")
         elif isinstance(ec, dict):
             ec = ec.get("color", "#444444")
@@ -3173,18 +3173,18 @@ renderAll();
 
 def run_subfinder(config: dict) -> list:
     """
-    Ejecuta subfinder para enumerar subdominios del dominio raíz del target.
+    Ejecuta subfinder para enumerar subdomains del dominio raíz del target.
 
     subfinder consulta múltiples fuentes pasivas (crt.sh, VirusTotal, Shodan,
-    etc.) para encontrar subdominios sin enviar tráfico al target directamente.
-    Los subdominios descubiertos se añaden automáticamente como VHOSTs tanto
+    etc.) para encontrar subdomains sin enviar tráfico al target directamente.
+    Los subdomains descubiertos se añaden automáticamente como VHOSTs tanto
     para Katana como para ffuf, y aparecen como nodos en el grafo.
 
     Args:
         config : Config global con subfinder_domain y output_dir.
 
     Returns:
-        Lista de subdominios descubiertos (strings).
+        Lista de subdomains descubiertos (strings).
     """
     domain     = config.get("subfinder_domain", config["host"])
     output_dir = config["output_dir"]
@@ -3199,7 +3199,7 @@ def run_subfinder(config: dict) -> list:
         "-t", "10",         # Threads
     ]
 
-    log("INFO", f"subfinder → enumerando subdominios de: {domain}")
+    log("INFO", f"subfinder → enumerating subdomains for: {domain}")
     log("INFO", f"Comando: {' '.join(cmd)}")
 
     subdomains = []
@@ -3208,13 +3208,13 @@ def run_subfinder(config: dict) -> list:
     if RICH_AVAILABLE:
         with Progress(
             SpinnerColumn(spinner_name="dots", style="bright_magenta"),
-            TextColumn("[bold magenta]SUBFINDER[/] buscando subdominios de "
+            TextColumn("[bold magenta]SUBFINDER[/] buscando subdomains de "
                        f"[cyan]{domain}[/]..."),
             TimeElapsedColumn(),
             expand=True,
             transient=False,
         ) as progress:
-            progress.add_task("subfinder", total=None)
+            progress.add_task("subfinder", total=Ninguno)
             try:
                 result = subprocess.run(
                     cmd, capture_output=True, text=True, timeout=120
@@ -3244,7 +3244,7 @@ def run_subfinder(config: dict) -> list:
 
     elapsed = time.time() - start_time
     total_raw = len(subdomains)
-    log("OK", f"subfinder → {total_raw} subdominios encontrados en {elapsed:.1f}s")
+    log("OK", f"subfinder → {total_raw} subdomains found en {elapsed:.1f}s")
 
     # ── Aplicar filtro 1: palabras clave ─────────────────────────────────────
     keywords = config.get("subfinder_keywords", [])
@@ -3254,28 +3254,28 @@ def run_subfinder(config: dict) -> list:
             sd for sd in subdomains
             if any(kw in sd.lower() for kw in keywords)
         ]
-        log("INFO", f"Filtro keywords {keywords}: {before} → {len(subdomains)} subdominios")
+        log("INFO", f"Filtro keywords {keywords}: {before} → {len(subdomains)} subdomains")
     elif not keywords:
         log("INFO", "Sin filtro de keywords aplicado.")
 
     # ── Aplicar filtro 2: ordenar por longitud y aplicar límite ──────────────
-    # Ordenar de más corto a más largo: los subdominios cortos son más relevantes
+    # Ordenar de más corto a más largo: los subdomains cortos son más relevantes
     # (admin.target.com es más interesante que qastg-eks-alv-integration.target.com)
     subdomains.sort(key=len)
 
     limit = config.get("subfinder_limit", 20)
     if limit and limit > 0 and len(subdomains) > limit:
-        log("INFO", f"Aplicando límite: {len(subdomains)} → {limit} subdominios (más cortos primero)")
+        log("INFO", f"Applying limit: {len(subdomains)} → {limit} subdomains (shortest first)")
         subdomains = subdomains[:limit]
 
     # ── Mostrar lista final ───────────────────────────────────────────────────
     if subdomains:
-        log("OK", f"Subdominios a procesar ({len(subdomains)} de {total_raw} encontrados):")
+        log("OK", f"Subdomains to process ({len(subdomains)} de {total_raw} encontrados):")
         for sd in subdomains:
             log("INFO", f"  → {sd}")
     else:
-        log("WARN", "No quedaron subdominios después de aplicar los filtros.")
-        log("INFO", f"  Todos los resultados están en: {out_file}")
+        log("WARN", "No subdomains left after applying filters.")
+        log("INFO", f"  All results are in: {out_file}")
 
     return subdomains
 
@@ -3287,7 +3287,7 @@ def run_subfinder(config: dict) -> list:
 def run_pipeline(config: dict):
     """
     Orquesta la ejecución secuencial de todas las fases del pipeline de reconocimiento:
-    0. Subfinder (enumeración de subdominios, opcional)
+    0. Subfinder (enumeración de subdomains, opcional)
     1. Katana Crawling (por target base y/o cada VHOST)
     2. ffuf Fuzzing   (por target base y/o cada VHOST)
     3. Construcción y exportación del grafo PyVis
@@ -3310,7 +3310,7 @@ def run_pipeline(config: dict):
         config["subfinder_results"] = discovered_subs
 
         if discovered_subs:
-            # Agregar subdominios descubiertos a los VHOSTs de Katana y ffuf
+            # Agregar subdomains descubiertos a los VHOSTs de Katana y ffuf
             # Solo si el usuario no los configuró manualmente (no solapar)
             existing_katana = set(config.get("katana_vhosts", []))
             existing_ffuf   = set(config.get("ffuf_vhosts", []))
@@ -3321,14 +3321,14 @@ def run_pipeline(config: dict):
             if new_for_katana:
                 config["katana_vhosts"].extend(new_for_katana)
                 config["use_katana_vhosts"] = True
-                log("OK", f"  {len(new_for_katana)} subdominios añadidos a Katana")
+                log("OK", f"  {len(new_for_katana)} subdomains added to Katana")
 
             if new_for_ffuf:
                 config["ffuf_vhosts"].extend(new_for_ffuf)
                 config["use_ffuf_vhosts"] = True
-                log("OK", f"  {len(new_for_ffuf)} subdominios añadidos a ffuf")
+                log("OK", f"  {len(new_for_ffuf)} subdomains added to ffuf")
 
-            # Actualizar all_vhosts con los nuevos subdominios
+            # Actualizar all_vhosts con los nuevos subdomains
             config["all_vhosts"] = list(dict.fromkeys(
                 config["katana_vhosts"] + config["ffuf_vhosts"]
             ))
@@ -3344,7 +3344,7 @@ def run_pipeline(config: dict):
     #   → Katana/ffuf apuntan al target base + header -H "Host: vhost.htb"
     #   → La IP resuelve a la misma máquina para todos los hosts
     #
-    # Modo Bug Bounty (subdominios reales con DNS propio):
+    # Modo Bug Bounty (subdomains reales con DNS propio):
     #   → Katana/ffuf apuntan directamente a https://subdominio.target.com
     #   → Sin header Host extra (el DNS ya resuelve al servidor correcto)
     #
@@ -3364,7 +3364,7 @@ def run_pipeline(config: dict):
         """
         Determina si un VHOST es un subdominio real (BB) o un virtual host HTB.
 
-        BB mode  → retorna (https://vhost.target.com, None)
+        BB mode  → retorna (https://vhost.target.com, Ninguno)
                    Katana/ffuf apuntan directo al subdominio, sin header Host.
 
         HTB mode → retorna (target_base, vhost)
@@ -3375,20 +3375,20 @@ def run_pipeline(config: dict):
         # Si el VHOST termina en el dominio raíz → subdominio real (BB mode)
         if vhost_lower.endswith("." + root_domain) or vhost_lower == root_domain:
             sub_url = f"{base_scheme}://{vhost}"
-            return (sub_url, None)   # URL directa, sin header Host
+            return (sub_url, Ninguno)   # URL directa, sin header Host
 
         # Si no → VHOST ficticio estilo HTB (mismo servidor, distinto Host header)
         return (config["target"], vhost)
 
     # Construir los scopes aplicando la heurística
-    katana_scopes = [(config["target"], None)]   # Target base siempre incluido
+    katana_scopes = [(config["target"], Ninguno)]   # Target base siempre incluido
     if config["use_katana_vhosts"]:
         for vhost in config["katana_vhosts"]:
             scope = build_scope(vhost)
             if scope not in katana_scopes:
                 katana_scopes.append(scope)
 
-    ffuf_scopes = [(config["target"], None)]     # Target base siempre incluido
+    ffuf_scopes = [(config["target"], Ninguno)]     # Target base siempre incluido
     if config["use_ffuf_vhosts"]:
         for vhost in config["ffuf_vhosts"]:
             scope = build_scope(vhost)
@@ -3399,11 +3399,11 @@ def run_pipeline(config: dict):
     log("INFO", f"Dominio raíz detectado: {root_domain}")
     log("INFO", f"Katana scopes ({len(katana_scopes)}):")
     for url, vhost in katana_scopes:
-        mode = "directo" if vhost is None else f"HTB header: {vhost}"
+        mode = "directo" if vhost is Ninguno else f"HTB header: {vhost}"
         log("INFO", f"  {url}  [{mode}]")
     log("INFO", f"ffuf scopes ({len(ffuf_scopes)}):")
     for url, vhost in ffuf_scopes:
-        mode = "directo" if vhost is None else f"HTB header: {vhost}"
+        mode = "directo" if vhost is Ninguno else f"HTB header: {vhost}"
         log("INFO", f"  {url}  [{mode}]")
 
     # Almacenamiento de resultados por scope
@@ -3454,11 +3454,11 @@ def run_pipeline(config: dict):
 
         # Formatear ETA de forma legible
         if eta_seconds < 60:
-            eta_str = f"{eta_seconds:.0f} segundos"
+            eta_str = f"{eta_seconds:.0f} seconds"
         elif eta_minutes < 60:
-            eta_str = f"{eta_minutes:.1f} minutos"
+            eta_str = f"{eta_minutes:.1f} minutes"
         else:
-            eta_str = f"{eta_hours:.1f} horas"
+            eta_str = f"{eta_hours:.1f} hours"
 
         print()
         print(f"  \033[93m┌─ ESTIMACIÓN DE TIEMPO ────────────────────────────────────────────┐\033[0m")
@@ -3470,7 +3470,7 @@ def run_pipeline(config: dict):
         print(f"  \033[93m└───────────────────────────────────────────────────────────────────┘\033[0m")
         print()
 
-        # Advertir si va a tardar más de 30 minutos
+        # Advertir si va a tardar más de 30 minutes
         if eta_seconds > 1800:
             log("WARN", f"Estimación alta ({eta_str}). Considerá una wordlist más pequeña.")
             log("INFO", "  common.txt (4,614)  →  seclists/common.txt")
@@ -3478,14 +3478,14 @@ def run_pipeline(config: dict):
             print()
 
         confirm_ffuf = input(
-            f"  \033[96m[?]\033[0m ¿Iniciar ffuf? (ETA: {eta_str}) (S/n): "
+            f"  \033[96m[?]\033[0m ¿Iniciar ffuf? (ETA: {eta_str}) (Y/n): "
         ).strip().lower()
 
         if confirm_ffuf in ("n", "no"):
-            log("INFO", "ffuf omitido por el usuario. El grafo se generará con datos de Katana.")
+            log("INFO", "ffuf omitido. El grafo se generará solo con datos de Katana.")
             ffuf_cancelled = True
         else:
-            log("INFO", "Ctrl+C en cualquier momento para cancelar ffuf y generar el grafo parcial.")
+            log("INFO", "Ctrl+C en cualquier momento para cancelar y generar grafo parcial.")
             print()
             try:
                 for target_url, vhost in ffuf_scopes:
@@ -3493,7 +3493,7 @@ def run_pipeline(config: dict):
                     log("PHASE", f"Fuzzeando scope: {scope_label}")
                     paths = run_ffuf_all_passes(target_url, vhost, output_dir, config)
                     ffuf_results[scope_label] = paths
-                    log("INFO", f"  → {len(paths)} rutas añadidas para '{scope_label}'")
+                    log("INFO", f"  → {len(paths)} routes added for '{scope_label}'")
 
             except KeyboardInterrupt:
                 # Ctrl+C durante ffuf → grafo parcial con lo que se tiene
@@ -3534,43 +3534,553 @@ def run_pipeline(config: dict):
     print(f"\n  \033[93m[>>]\033[0m Abrí el grafo: \033[96mxdg-open {output_html.resolve()}\033[0m\n")
     print("\033[92m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m\n")
 
+    # ── Save session cache for drill-down ────────────────────────────────────
+    _save_session_cache(config, katana_results, ffuf_results)
 
-# SECCIÓN 8: ENTRY POINT
+    return katana_results, ffuf_results, output_html
+
+
+# =============================================================================
+# SECTION 8: SESSION CACHE & MODO DRILL-DOWN
+# =============================================================================
+
+def _save_session_cache(config: dict, katana_results: dict, ffuf_results: dict):
+    """Save pipeline results as JSON for drill-down reuse."""
+    import json as _json
+    cache_dir = config["output_dir"]
+
+    cache = {
+        "katana_results": katana_results,
+        "ffuf_results":   ffuf_results,
+        "target":         config["target"],
+        "host":           config["host"],
+        "session_label":  config["session_label"],
+        "graph_depth":    config.get("graph_depth", 2),
+        "drill_history":  config.get("drill_history", []),
+    }
+
+    cache_file = cache_dir / "session_cache.json"
+    with open(cache_file, "w", encoding="utf-8") as f:
+        _json.dump(cache, f, ensure_ascii=False, indent=2, default=str)
+
+    log("INFO", f"Cache de sesión guardado: {cache_file}")
+
+
+def _load_session_cache(session_dir: Path) -> dict:
+    """Load cached results from a previous session."""
+    import json as _json
+    cache_file = session_dir / "session_cache.json"
+    if not cache_file.exists():
+        return {}
+    with open(cache_file, "r", encoding="utf-8") as f:
+        return _json.load(f)
+
+
+def drill_down_menu(config: dict, katana_results: dict, ffuf_results: dict,
+                     drill_depth: int = 0, base_url: str = "") -> "dict | Ninguno":
+    """
+    Display numbered list of interesting nodes and let user pick one to drill into.
+
+    Shows:
+      1. Subdomains (from subfinder)
+      2. Top-level directories with most grouped URLs
+      3. ffuf hallazgos (200/301/403)
+
+    Returns a dict with the selected node info, or Ninguno to exit.
+    """
+    print()
+    indent = "  " * (drill_depth + 1)
+    depth_label = f" (depth {drill_depth})" if drill_depth > 0 else ""
+    print(f"\033[38;5;208m  ╔═══════════════════════════════════════════════════════════════════╗\033[0m")
+    print(f"\033[38;5;208m  ║  🔍 MODO DRILL-DOWN{depth_label:>46}║\033[0m")
+    print(f"\033[38;5;208m  ║  Seleccioná un nodo para explorar más profundo.                                ║\033[0m")
+    print(f"\033[38;5;208m  ║  La herramienta re-crawleará y re-fuzzeará solo el target seleccionado.    ║\033[0m")
+    print(f"\033[38;5;208m  ╚═══════════════════════════════════════════════════════════════════╝\033[0m\n")
+
+    options = []   # [(index, label, url, type, details)]
+
+    # ── Subdomains ────────────────────────────────────────────────────────────
+    subfinder_subs = config.get("subfinder_results", [])
+    if subfinder_subs:
+        print(f"  \033[38;5;208m── SUBDOMINIOS ──────────────────────────────────────────────────────\033[0m")
+        for sub in subfinder_subs:
+            katana_count = len(katana_results.get(sub, []))
+            ffuf_count   = len(ffuf_results.get(sub, []))
+            scheme = "https" if config["target"].startswith("https") else "http"
+            url    = f"{scheme}://{sub}"  # Subdomains always use their own hostname
+            idx    = len(options) + 1
+            options.append({
+                "index": idx, "label": sub, "url": url,
+                "type": "subdomain",
+                "katana_count": katana_count, "ffuf_count": ffuf_count,
+            })
+            # Color: green if has data, yellow if empty
+            color = "\033[92m" if katana_count > 0 else "\033[93m"
+            print(f"  {color}  [{idx:2d}]\033[0m {sub:40s} "
+                  f"\033[90m{katana_count} URLs, {ffuf_count} ffuf hits\033[0m")
+        print()
+
+    # ── Top directories from Katana ──────────────────────────────────────────
+    # Extract first-level paths and count how many URLs each one groups
+    path_counts = {}   # { scope:path → count }
+    for scope_label, urls in katana_results.items():
+        for entry in urls:
+            url = entry.get("url", "") if isinstance(entry, dict) else str(entry)
+            try:
+                parsed_path = urlparse(url).path
+                parts = [p for p in parsed_path.split("/") if p]
+                if parts:
+                    top_dir = "/" + parts[0] + "/"
+                    key = (scope_label, top_dir)
+                    path_counts[key] = path_counts.get(key, 0) + 1
+            except Exception:
+                continue
+
+    # Sort by count descending, take top 10
+    sorted_paths = sorted(path_counts.items(), key=lambda x: -x[1])[:10]
+
+    if sorted_paths:
+        print(f"  \033[38;5;51m── DIRECTORIOS PRINCIPALES (por cantidad de URLs) ─────────────────────────────────\033[0m")
+        for (scope_label, path), count in sorted_paths:
+            scheme = "https" if config["target"].startswith("https") else "http"
+            # Build absolute URL from target host + path
+            # Paths in parent_katana are always absolute from the host root
+            # (e.g. /vendor/select2/, /vendor/countdowntime/)
+            scheme = "https" if config["target"].startswith("https") else "http"
+            _host  = config["host"]
+            _port  = config.get("port", 80)
+            port_str = f":{_port}" if _port not in (80, 443) else ""
+            url = f"{scheme}://{_host}{port_str}{path}"
+            idx = len(options) + 1
+            options.append({
+                "index": idx, "label": f"{scope_label}{path}",
+                "url": url, "type": "directory",
+                "katana_count": count, "ffuf_count": 0,
+                "scope": scope_label, "path": path,
+            })
+            print(f"  \033[96m  [{idx:2d}]\033[0m {scope_label}{path:30s} "
+                  f"\033[90m{count} URLs agrupadas\033[0m")
+        print()
+
+    # ── ffuf hallazgos ────────────────────────────────────────────────────────
+    all_ffuf = []
+    for scope_label, hallazgos in ffuf_results.items():
+        for f in hallazgos:
+            all_ffuf.append((scope_label, f))
+
+    if all_ffuf:
+        print(f"  \033[38;5;214m── HALLAZGOS FFUF ──────────────────────────────────────────────────\033[0m")
+        for scope_label, finding in all_ffuf[:10]:
+            url    = finding.get("url", "")
+            status = finding.get("status", 0)
+            idx    = len(options) + 1
+            sc = "\033[92m" if status == 200 else ("\033[91m" if status == 403 else "\033[93m")
+            options.append({
+                "index": idx, "label": f"[{status}] {url}",
+                "url": url, "type": "ffuf",
+                "status": status, "scope": scope_label,
+            })
+            print(f"  {sc}  [{idx:2d}]\033[0m [{status}] {url[:60]}")
+        print()
+
+    if not options:
+        log("INFO", "No nodes available for drill-down.")
+        return Ninguno
+
+    # ── User selection ────────────────────────────────────────────────────────
+    print(f"  \033[38;5;240m  Los resultados cacheados se reutilizarán. Solo el target seleccionado\033[0m")
+    print(f"  \033[38;5;240m  será explorado con mayor profundidad.\033[0m\n")
+
+    selection = input(
+        f"  \033[96m[?]\033[0m Drill sobre nodo (1-{len(options)}, Enter para salir): "
+    ).strip()
+
+    if not selection:
+        return Ninguno
+
+    try:
+        idx = int(selection)
+        if 1 <= idx <= len(options):
+            selected = options[idx - 1]
+            log("OK", f"Seleccionado: {selected['label']}")
+            return selected
+        else:
+            log("WARN", f"Invalid selection: {idx}")
+            return Ninguno
+    except ValueError:
+        return Ninguno
+
+
+def run_drill_down(config: dict, parent_katana: dict, parent_ffuf: dict,
+                   selected: dict, drill_depth: int) -> tuple:
+    """
+    Drill into a selected node using cached Katana data + optional new ffuf.
+
+    Flow:
+      1. FILTER cached Katana results to only URLs in the selected branch
+         (no re-crawling — Katana already crawled everything in the initial scan)
+      2. Run ffuf ONLY on the selected target if user wants
+      3. Generate focused graph: selected node as root, filtered Katana + new ffuf
+      4. Return updated parent results for the next drill-down menu
+
+    Returns: (updated_parent_katana, updated_parent_ffuf, output_html)
+    """
+    import copy
+
+    drill_label = selected["label"].replace("/", "_").replace(":", "_").strip("_")
+    drill_dir   = config["output_dir"] / f"drill_{drill_depth}_{sanitize_filename(drill_label)}"
+    drill_dir.mkdir(parents=True, exist_ok=True)
+
+    target_url  = selected["url"]
+    scope_label = selected.get("scope", urlparse(target_url).hostname or config["host"])
+
+    # Determine the path prefix to filter cached results
+    # e.g. if target_url is "http://10.10.10.1/vendor/", prefix is "/vendor"
+    parsed_target = urlparse(target_url)
+    drill_path    = parsed_target.path.rstrip("/") or ""
+
+    print(f"\n\033[38;5;208m━━━━━━━━━━━━━━━━━━━━━━  DRILL-DOWN #{drill_depth}: {selected['label'][:40]}  ━━━━━━━━━━━━━━━\033[0m")
+    log("PHASE", f"Target: {target_url}")
+    log("INFO",  f"Filtro de rama: {drill_path or '/'}")
+    log("INFO",  f"Output: {drill_dir}")
+
+    # ── Ask drill settings ───────────────────────────────────────────────────
+    print()
+    depth_in = input(
+        f"  \033[96m[?]\033[0m Profundidad del grafo para este drill [3]: "
+    ).strip()
+    try:
+        drill_graph_depth = max(1, int(depth_in)) if depth_in else 3
+    except ValueError:
+        drill_graph_depth = 3
+
+    node_limit_in = input(
+        f"  \033[96m[?]\033[0m Nodos máximos [{config.get('graph_node_limit', 150)}]: "
+    ).strip()
+    try:
+        drill_node_limit = int(node_limit_in) if node_limit_in else config.get("graph_node_limit", 150)
+    except ValueError:
+        drill_node_limit = config.get("graph_node_limit", 150)
+
+    # ffuf settings
+    print()
+    run_ffuf_yn = input(
+        f"  \033[96m[?]\033[0m ¿Ejecutar ffuf sobre {selected['label'][:40]}? (Y/n): "
+    ).strip().lower()
+    skip_ffuf = run_ffuf_yn in ("n", "no")
+
+    drill_wordlist  = config.get("wordlist", "")
+    drill_extensions = config.get("ffuf_extensions", [])
+
+    if not skip_ffuf:
+        current_wl = config.get("wordlist", "")
+        wl_in = input(
+            f"  \033[96m[?]\033[0m Wordlist [Enter = {Path(current_wl).name if current_wl else 'none'}]: "
+        ).strip()
+        if wl_in and Path(wl_in).is_file():
+            drill_wordlist = wl_in
+        elif wl_in:
+            log("WARN", f"Archivo no encontrado: {wl_in}. Using previous wordlist.")
+
+        ext_in = input(
+            f"  \033[96m[?]\033[0m Extensiones de archivo a probar (Enter = omitir, e.g. .php,.bak,.txt): "
+        ).strip()
+        if ext_in:
+            drill_extensions = [e.strip() if e.strip().startswith(".") else "." + e.strip()
+                                for e in ext_in.split(",") if e.strip()]
+            log("OK", f"Extensions: {drill_extensions}")
+        else:
+            drill_extensions = []
+
+    # ── Create drill config ──────────────────────────────────────────────────
+    drill_config = copy.deepcopy(config)
+    drill_config["target"]           = target_url
+    drill_config["host"]             = parsed_target.hostname or config["host"]
+    drill_config["output_dir"]       = drill_dir
+    drill_config["session_label"]    = f"{config['session_label']}_drill{drill_depth}_{drill_label}"
+    drill_config["graph_depth"]      = drill_graph_depth
+    drill_config["graph_node_limit"] = drill_node_limit
+    drill_config["wordlist"]         = drill_wordlist
+    drill_config["ffuf_extensions"]  = drill_extensions
+    drill_config["use_katana_vhosts"] = False
+    drill_config["use_ffuf_vhosts"]   = False
+    drill_config["katana_vhosts"]     = []
+    drill_config["ffuf_vhosts"]       = []
+    drill_config["subfinder_results"] = []
+
+    # Track drill history
+    history = list(config.get("drill_history", []))
+    history.append({"depth": drill_depth, "target": target_url,
+                    "label": selected["label"], "type": selected["type"]})
+    drill_config["drill_history"] = history
+
+    log("OK", f"Configuración: depth={drill_graph_depth} | limit={drill_node_limit} | "
+              f"ffuf={'skip' if skip_ffuf else drill_wordlist.split('/')[-1] if drill_wordlist else 'none'} | "
+              f"ext={drill_extensions or 'none'}")
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # DRILL PHASE 1: FILTER cached Katana results (NO re-crawling)
+    # Katana already crawled everything in the initial scan. We just filter
+    # the cached URLs to only those that belong to the selected branch.
+    # ══════════════════════════════════════════════════════════════════════════
+    print(f"\n\033[95m━━━━━━━━━━━━  DRILL FASE 1: FILTRAR DATOS CACHEADOS  ━━━━━━━━━━━━━━━━━━━━\033[0m")
+
+    filtered_katana = {}
+    total_parent = 0
+    total_filtered = 0
+
+    for scope, urls in parent_katana.items():
+        total_parent += len(urls)
+        filtered = []
+        for entry in urls:
+            if not isinstance(entry, dict):
+                continue
+            url = entry.get("url", "")
+            try:
+                entry_path = urlparse(url).path
+            except Exception:
+                continue
+
+            # Keep URLs whose path starts with the drill prefix
+            # If drilling into a subdomain (no path prefix), keep all URLs from that scope
+            if not drill_path:
+                # Drilling into a subdomain → keep all URLs that match the hostname
+                entry_host = urlparse(url).hostname or ""
+                drill_host = parsed_target.hostname or ""
+                if entry_host == drill_host:
+                    filtered.append(entry)
+            elif entry_path.startswith(drill_path + "/") or entry_path == drill_path:
+                filtered.append(entry)
+
+        if filtered:
+            filtered_katana[scope] = filtered
+            total_filtered += len(filtered)
+
+    log("OK", f"Katana cacheado: {total_parent} total → {total_filtered} en rama '{drill_path or '/'}'")
+
+    # ── Strip drill prefix from URLs so the path tree is relative ────────────
+    # Without this, drilling into /vendor produces: seed → /vendor → /vendor/select2
+    # With this: seed → select2 (relative to the drill root)
+    # The original URLs are preserved for the action panel commands.
+    if drill_path:
+        # IMPORTANT: Create NEW dicts instead of modifying originals in place.
+        # Python passes dicts by reference — modifying entries here would corrupt
+        # parent_katana for future drill-downs.
+        for scope in list(filtered_katana.keys()):
+            stripped = []
+            for entry in filtered_katana[scope]:
+                new_entry = dict(entry)   # shallow copy — new dict, same values
+                original_url = new_entry.get("url", "")
+                try:
+                    p = urlparse(original_url)
+                    rel_path = p.path
+                    if rel_path.startswith(drill_path + "/"):
+                        rel_path = rel_path[len(drill_path):]
+                    elif rel_path == drill_path:
+                        rel_path = "/"
+                    port_str = f":{p.port}" if p.port and p.port not in (80, 443) else ""
+                    new_entry["_original_url"] = original_url
+                    new_entry["url"] = f"{p.scheme}://{p.hostname}{port_str}{rel_path}"
+                except Exception:
+                    pass
+                stripped.append(new_entry)
+            filtered_katana[scope] = stripped
+        log("INFO", f"Paths stripeados: '{drill_path}/' prefijo removido para árbol relativo")
+
+    if total_filtered == 0:
+        log("WARN", "No se encontraron URLs cacheadas para esta rama. The drill graph will only have ffuf results.")
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # DRILL PHASE 2: ffuf on the selected target ONLY
+    # ══════════════════════════════════════════════════════════════════════════
+    print(f"\n\033[95m━━━━━━━━━━━━  DRILL FASE 2: FFUF  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m")
+
+    drill_ffuf = {}
+    if not skip_ffuf and check_tool("ffuf") and drill_wordlist:
+        wordlist_lines = _count_wordlist_lines(drill_wordlist)
+        passes = 1 + len(drill_extensions)
+        total_words = wordlist_lines * passes
+        rate = drill_config.get("rate_limit", 0) or 50
+        eta_sec = total_words / rate
+        eta_str = f"{eta_sec:.0f}s" if eta_sec < 60 else f"{eta_sec/60:.1f}min"
+
+        log("INFO", f"Fuzzing {target_url} — {passes} pass(es) — ETA: {eta_str}")
+
+        try:
+            paths = run_ffuf_all_passes(target_url, Ninguno, drill_dir, drill_config)
+            drill_ffuf[scope_label] = paths
+            log("OK", f"ffuf: {len(paths)} hallazgos")
+        except KeyboardInterrupt:
+            log("WARN", "ffuf interrupted.")
+    elif skip_ffuf:
+        log("INFO", "ffuf omitido por el usuario.")
+    else:
+        log("INFO", "ffuf no disponible o sin wordlist.")
+
+    # ── Separate original vs stripped ffuf for graph vs merge ─────────────────
+    # drill_ffuf_original: non-stripped URLs, used for merging back to parent
+    # drill_ffuf_stripped: prefix-stripped URLs, used only for the graph
+    import copy as _copy2
+    drill_ffuf_original = {}
+    for scope in drill_ffuf:
+        drill_ffuf_original[scope] = [dict(e) for e in drill_ffuf[scope]]
+
+    drill_ffuf_stripped = {}
+    if drill_path and drill_ffuf:
+        for scope in drill_ffuf:
+            stripped = []
+            for entry in drill_ffuf[scope]:
+                new_entry = dict(entry)
+                original_url = new_entry.get("url", "")
+                try:
+                    p = urlparse(original_url)
+                    rel_path = p.path
+                    if rel_path.startswith(drill_path + "/"):
+                        rel_path = rel_path[len(drill_path):]
+                    elif rel_path == drill_path:
+                        rel_path = "/"
+                    port_str = f":{p.port}" if p.port and p.port not in (80, 443) else ""
+                    new_entry["_original_url"] = original_url
+                    new_entry["url"] = f"{p.scheme}://{p.hostname}{port_str}{rel_path}"
+                except Exception:
+                    pass
+                stripped.append(new_entry)
+            drill_ffuf_stripped[scope] = stripped
+    else:
+        drill_ffuf_stripped = drill_ffuf_original
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # DRILL PHASE 3: Build FOCUSED graph
+    # Uses ONLY: filtered Katana data + new ffuf data
+    # The selected node becomes the root of the new graph
+    # ══════════════════════════════════════════════════════════════════════════
+    print(f"\n\033[95m━━━━━━━━━━━━  DRILL FASE 3: GRAFO ENFOCADO  ━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m")
+
+    net = build_graph(drill_config, filtered_katana, drill_ffuf_stripped)
+    output_html = export_graph(net, drill_config)
+
+    total_k = sum(len(v) for v in filtered_katana.values())
+    total_f = sum(len(v) for v in drill_ffuf_stripped.values())
+    print(f"\n\033[92m━━━━━━━━━━━━  DRILL #{drill_depth} COMPLETADO  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m")
+    log("OK", f"Graph: {output_html.resolve()}")
+    log("OK", f"Nodes: {len(net.nodes)} | Edges: {len(net.edges)}")
+    log("OK", f"URLs: {total_k} (cached Katana) + {total_f} (new ffuf)")
+    print(f"\n  \033[93m[>>]\033[0m Open: \033[96mxdg-open {output_html.resolve()}\033[0m\n")
+
+    # ── Update parent results with new ffuf hallazgos ─────────────────────────
+    # Katana data doesn't change (no re-crawl). Only ffuf results are new.
+    updated_katana = parent_katana   # unchanged
+    updated_ffuf   = dict(parent_ffuf)
+
+    for scope, hallazgos in drill_ffuf_original.items():
+        if scope in updated_ffuf:
+            existing = {f.get("url", "") for f in updated_ffuf[scope]}
+            for f in hallazgos:
+                if f.get("url", "") not in existing:
+                    updated_ffuf[scope].append(f)
+        else:
+            updated_ffuf[scope] = hallazgos
+
+    _save_session_cache(drill_config, filtered_katana, drill_ffuf_stripped)
+
+    return updated_katana, updated_ffuf, output_html
+
+
+# =============================================================================
+# SECTION 9: ENTRY POINT
 # =============================================================================
 
 def main():
-    """
-    Punto de entrada principal del script.
-    Gestiona el flujo completo: banner → inputs → pipeline → reporte.
-    """
+    """Main entry point. Handles: disclaimer → banner → inputs → pipeline → drill-down loop."""
+
+    # ── Ethical use disclaimer ────────────────────────────────────────────────
+    print()
+    print("\033[93m  ⚠  AVISO LEGAL\033[0m")
+    print("\033[38;5;240m  Esta herramienta está diseñada para pruebas de seguridad autorizadas y fines")
+    print("  educativos únicamente. Solo usá Spider Noir contra objetivos sobre los que tenés")
+    print("  autorización explícita por escrito. El acceso no autorizado a sistemas")
+    print("  informáticos es ilegal. El autor no asume responsabilidad por el mal uso.\033[0m")
+    print()
+    accept = input("  \033[96m[?]\033[0m ¿Aceptás usar esta herramienta de forma ética y responsable? (S/n): ").strip().lower()
+    if accept in ("n", "no"):
+        print("\n  Saliendo. Usá esta herramienta responsablemente.\n")
+        sys.exit(0)
+
     banner()
 
-    # Verificar que pyvis esté disponible (ya se verificó en el import, pero doble check)
+    # ── Verify dependencies ──────────────────────────────────────────────────
     try:
         from pyvis.network import Network  # noqa
     except ImportError:
-        log("ERROR", "pyvis requerido: pip install pyvis")
+        log("ERROR", "pyvis requerido: pip install pyvis --break-system-packages")
         sys.exit(1)
 
-    # Recolectar configuración interactiva
+    # ── Collect configuration ────────────────────────────────────────────────
     try:
         config = collect_inputs()
     except KeyboardInterrupt:
-        print("\n\n  \033[93m[!] Pipeline cancelado por el usuario (Ctrl+C).\033[0m\n")
+        print("\n\n  \033[93m[!] Cancelado por el usuario.\033[0m\n")
         sys.exit(0)
 
-    # Ejecutar el pipeline completo
+    # ── Run initial pipeline ─────────────────────────────────────────────────
     try:
-        run_pipeline(config)
+        result = run_pipeline(config)
+        if result is Ninguno:
+            sys.exit(0)
+        katana_results, ffuf_results, output_html = result
     except KeyboardInterrupt:
-        print("\n\n  \033[93m[!] Pipeline interrumpido por el usuario (Ctrl+C).\033[0m")
-        print(f"  \033[93m[!] Los resultados parciales están en: {config['output_dir'].resolve()}\033[0m\n")
+        print("\n\n  \033[93m[!] Pipeline interrumpido.\033[0m")
+        print(f"  \033[93m[!] Resultados parciales en: {config['output_dir'].resolve()}\033[0m\n")
         sys.exit(0)
     except Exception as e:
         log("ERROR", f"Error crítico no controlado: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)
+
+    # ── Drill-down loop ──────────────────────────────────────────────────────
+    # After the initial pipeline, the user can select nodes to explore deeper.
+    # Each drill-down re-crawls and re-fuzzes only the selected target with
+    # increased depth. Results are merged with the parent cache.
+    drill_depth = 0
+    current_base = config["target"]   # Tracks the base URL for the drill-down menu
+
+    while True:
+        try:
+            selected = drill_down_menu(config, katana_results, ffuf_results, drill_depth, current_base)
+            if selected is Ninguno:
+                log("INFO", "Saliendo del modo drill-down.")
+                break
+
+            drill_depth += 1
+
+            katana_results, ffuf_results, output_html = run_drill_down(
+                config, katana_results, ffuf_results, selected, drill_depth
+            )
+
+            # After drill completes, set current_base to the drill's target
+            # so the NEXT menu builds URLs relative to this drill level.
+            # BUT: the menu shows data from parent_katana (unchanged),
+            # so we need to use the selected URL as base only if the user
+            # will drill into a CHILD of this node.
+            # For simplicity: always use the original target as base.
+            # The menu paths are absolute from the host root.
+            current_base = config["target"]
+        except KeyboardInterrupt:
+            print("\n\n  \033[93m[!] Drill-down interrumpido.\033[0m\n")
+            break
+        except Exception as e:
+            log("ERROR", f"Error de drill-down: {e}")
+            import traceback
+            traceback.print_exc()
+            break
+
+    # ── Final summary ────────────────────────────────────────────────────────
+    print()
+    log("OK", f"Session directory: \033[96m{config['output_dir'].resolve()}\033[0m")
+    if drill_depth > 0:
+        log("OK", f"Drill-downs completados: {drill_depth}")
+    print("\n  \033[38;5;240mGracias por usar Spider Noir. Mantené la ética. 🕷\033[0m\n")
 
 
 if __name__ == "__main__":
