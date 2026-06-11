@@ -57,7 +57,7 @@ The graph shows the target's structure at a glance: which paths exist, what tech
 ### Quick start
 
 ```bash
-git clone https://github.com/rk103/spider-noir.git
+git clone https://github.com/rk103-fr4/spider-noir.git
 cd spider-noir
 
 # Install Python deps
