@@ -2,7 +2,6 @@
 
 > 🌐 **Language Note:** The main script (`spider_noir.py`) features an interactive interface and console logs entirely in **English** (industry standard). If you prefer the original version in **Spanish**, you can run `spider_noir_es.py`.
 
-
 **Recon pipeline for web pentesting that unifies subdomain enumeration, crawling and fuzzing into an interactive SVG knowledge graph.**
 
 Built for Parrot OS / Kali Linux. Designed for HTB and Bug Bounty workflows.
@@ -58,7 +57,7 @@ The graph shows the target's structure at a glance: which paths exist, what tech
 ### Quick start
 
 ```bash
-git clone https://github.com/rk103-fr4/spider-noir.git
+git clone https://github.com/rk103/spider-noir.git
 cd spider-noir
 
 # Install Python deps
@@ -202,7 +201,6 @@ By downloading, cloning, running, or utilizing **Spider Noir**, you agree to the
 4. **Compliance:** It is the sole responsibility of the end-user to ensure that their usage of this tool complies with all applicable local, national, and international laws.
 
 **Use responsibly. Test only what you own or have explicit permission to hack.**
-
 
 ---
 

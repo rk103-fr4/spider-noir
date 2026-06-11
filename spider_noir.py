@@ -30,6 +30,40 @@ import re
 import time
 import threading
 from pathlib import Path
+
+# ── Tab autocomplete for file paths in input() ──────────────────────────────
+def input_path(prompt: str = "> ") -> str:
+    """input() with Tab autocomplete for file paths.
+    Activates readline completer right before the call so Rich
+    or other libraries can't interfere with it."""
+    try:
+        import readline
+        import glob
+        import os as _os
+
+        def _completer(text, state):
+            expanded = _os.path.expanduser(text) if text.startswith("~") else text
+            matches = glob.glob(expanded + "*")
+            matches = [m + "/" if _os.path.isdir(m) else m for m in sorted(matches)]
+            return matches[state] if state < len(matches) else None
+
+        # Activate completer RIGHT before input()
+        old_completer = readline.get_completer()
+        old_delims    = readline.get_completer_delims()
+        readline.set_completer(_completer)
+        readline.set_completer_delims(" \t\n")
+        readline.parse_and_bind("set show-all-if-ambiguous on")
+        readline.parse_and_bind("set completion-ignore-case on")
+        readline.parse_and_bind("tab: complete")
+
+        result = input(prompt).strip()
+
+        # Restore previous completer
+        readline.set_completer(old_completer)
+        readline.set_completer_delims(old_delims)
+        return result
+    except (ImportError, AttributeError):
+        return input(prompt).strip()
 from datetime import datetime
 from urllib.parse import urlparse, urljoin
 
@@ -401,7 +435,7 @@ def _load_vhosts_input(prompt_label: str) -> list:
     print(f"\n      Podés ingresar para {prompt_label}:")
     print("        · Lista separada por comas: dev.htb,admin.htb,api.htb")
     print("        · Ruta a un archivo .txt con un VHOST por línea\n")
-    raw = input(f"  \033[96m[?]\033[0m [{prompt_label}] VHOSTs o ruta al archivo: ").strip()
+    raw = input_path(f"  \033[96m[?]\033[0m [{prompt_label}] VHOSTs o ruta al archivo: ").strip()
     if not raw:
         return []
     if Path(raw).is_file():
@@ -559,7 +593,7 @@ def collect_inputs() -> dict:
     print("  \033[38;5;240m    HackerOne → program → Policy → Download CSV\033[0m")
     print("  \033[38;5;240m    Burp Suite → Target → Scope → Save to file\033[0m\n")
 
-    scope_file_input = input(
+    scope_file_input = input_path(
         "  \033[96m[?]\033[0m Path to scope file (Enter to skip)\n"
         "      ej: ~/Downloads/gogo_vdp_scope.csv  o  ~/burp_scope.json > "
     ).strip()
@@ -769,11 +803,11 @@ def collect_inputs() -> dict:
     #   /usr/share/seclists/Discovery/Web-Content/raft-large-directories.txt
     print("  \033[38;5;214m── Pass 1: Directories (/FUZZ) ───────────────────────────────────\033[0m\n")
     while True:
-        wordlist = input(
+        wordlist = input_path(
             "  \033[96m[?]\033[0m DIRECTORY wordlist (required)\n"
             "      Words intended as paths: admin, backup, api, config\n"
             "      [Enter = search for default wordlist on system]: "
-        ).strip()
+        )
         if not wordlist:
             defaults = [
                 "/usr/share/wordlists/dirb/common.txt",
@@ -861,7 +895,7 @@ def collect_inputs() -> dict:
         # Una wordlist de archivos contiene nombres como config, index, settings,
         # readme, db, database — sin extensión, que ffuf combina con el .ext.
         print()
-        wordlist_files = input(
+        wordlist_files = input_path(
             "  \033[96m[?]\033[0m FILE wordlist for extension passes\n"
             "      Words intended as filenames: config, index, db\n"
             "      [Enter = reuse directory wordlist as fallback]: "
@@ -3545,11 +3579,26 @@ def run_pipeline(config: dict):
 # =============================================================================
 
 def _save_session_cache(config: dict, katana_results: dict, ffuf_results: dict):
-    """Save pipeline results as JSON for drill-down reuse."""
+    """Save pipeline results + full config as JSON for resume and drill-down."""
     import json as _json
     cache_dir = config["output_dir"]
 
+    # Serialize config (skip non-serializable values like Path objects and regex)
+    safe_config = {}
+    for k, v in config.items():
+        if k == "scope_wildcard_patterns":
+            continue  # regex objects can't be serialized
+        elif isinstance(v, Path):
+            safe_config[k] = str(v)
+        else:
+            try:
+                _json.dumps(v)
+                safe_config[k] = v
+            except (TypeError, ValueError):
+                safe_config[k] = str(v)
+
     cache = {
+        "config":         safe_config,
         "katana_results": katana_results,
         "ffuf_results":   ffuf_results,
         "target":         config["target"],
@@ -3557,13 +3606,14 @@ def _save_session_cache(config: dict, katana_results: dict, ffuf_results: dict):
         "session_label":  config["session_label"],
         "graph_depth":    config.get("graph_depth", 2),
         "drill_history":  config.get("drill_history", []),
+        "saved_at":       datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     }
 
     cache_file = cache_dir / "session_cache.json"
     with open(cache_file, "w", encoding="utf-8") as f:
         _json.dump(cache, f, ensure_ascii=False, indent=2, default=str)
 
-    log("INFO", f"Session cache saved: {cache_file}")
+    log("OK", f"Session saved: {cache_file}")
 
 
 def _load_session_cache(session_dir: Path) -> dict:
@@ -3574,6 +3624,135 @@ def _load_session_cache(session_dir: Path) -> dict:
         return {}
     with open(cache_file, "r", encoding="utf-8") as f:
         return _json.load(f)
+
+
+def _find_saved_sessions() -> list:
+    """Find all saved sessions in ~/spider_noir/."""
+    sessions = []
+    base_dir = Path.home() / "spider_noir"
+    if not base_dir.exists():
+        return sessions
+
+    for session_dir in sorted(base_dir.iterdir(), reverse=True):
+        cache_file = session_dir / "session_cache.json"
+        if cache_file.exists():
+            try:
+                import json as _json
+                with open(cache_file, "r") as f:
+                    cache = _json.load(f)
+                sessions.append({
+                    "dir":       session_dir,
+                    "target":    cache.get("target", "?"),
+                    "host":      cache.get("host", "?"),
+                    "label":     cache.get("session_label", "?"),
+                    "saved_at":  cache.get("saved_at", "?"),
+                    "katana_n":  sum(len(v) for v in cache.get("katana_results", {}).values()),
+                    "ffuf_n":    sum(len(v) for v in cache.get("ffuf_results", {}).values()),
+                    "drills":    len(cache.get("drill_history", [])),
+                })
+            except Exception:
+                continue
+
+    return sessions
+
+
+def _resume_session(session_path: str = "") -> "tuple | None":
+    """Resume a saved session. If session_path is provided, load that directly.
+    Otherwise show saved sessions and let user pick one.
+    Returns (config, katana_results, ffuf_results) or None."""
+    import json as _json
+
+    # ── Direct path provided ─────────────────────────────────────────────────
+    if session_path:
+        p = Path(session_path).expanduser()
+        if p.is_file() and p.name == "session_cache.json":
+            p = p.parent   # use the directory
+        if not p.is_dir():
+            log("ERROR", f"Session directory not found: {p}")
+            return None
+        cache = _load_session_cache(p)
+        if not cache:
+            log("ERROR", f"No valid session_cache.json in: {p}")
+            return None
+        config = cache.get("config", {})
+        config["output_dir"] = Path(config.get("output_dir", str(p)))
+        config["output_dir"].mkdir(parents=True, exist_ok=True)
+        config["scope_wildcard_patterns"] = []
+        for wc in config.get("scope_wildcards", []):
+            if wc.startswith("*."):
+                base = re.escape(wc[2:])
+                config["scope_wildcard_patterns"].append(
+                    re.compile(rf"^(.+[.])?{base}$", re.IGNORECASE)
+                )
+        katana_results = cache.get("katana_results", {})
+        ffuf_results   = cache.get("ffuf_results", {})
+        total_k = sum(len(v) for v in katana_results.values())
+        total_f = sum(len(v) for v in ffuf_results.values())
+        log("OK", f"Session loaded: {config.get('target', '?')}")
+        log("INFO", f"  {total_k} Katana URLs + {total_f} ffuf findings")
+        return config, katana_results, ffuf_results
+
+    # ── Show saved sessions menu ─────────────────────────────────────────────
+    sessions = _find_saved_sessions()
+    if not sessions:
+        log("INFO", "No saved sessions found.")
+        return None
+
+    print()
+    print("\033[38;5;51m  ╔═══════════════════════════════════════════════════════════════════╗\033[0m")
+    print("\033[38;5;51m  ║  📂 SAVED SESSIONS                                               ║\033[0m")
+    print("\033[38;5;51m  ╚═══════════════════════════════════════════════════════════════════╝\033[0m\n")
+
+    for i, s in enumerate(sessions[:10], 1):
+        drill_info = f" | {s['drills']} drills" if s['drills'] > 0 else ""
+        print(f"  \033[96m[{i:2d}]\033[0m {s['target'][:45]:45s}")
+        print(f"       \033[90m{s['saved_at']} | {s['katana_n']} URLs | {s['ffuf_n']} ffuf{drill_info}\033[0m")
+        print(f"       \033[90m{s['dir']}\033[0m")
+        print()
+
+    selection = input(f"  \033[96m[?]\033[0m Resume session (1-{len(sessions[:10])}, Enter to start new): ").strip()
+
+    if not selection:
+        return None
+
+    try:
+        idx = int(selection) - 1
+        if 0 <= idx < len(sessions[:10]):
+            s = sessions[idx]
+            cache = _load_session_cache(s["dir"])
+            if not cache:
+                log("ERROR", "Failed to load session cache.")
+                return None
+
+            # Reconstruct config from saved data
+            config = cache.get("config", {})
+            config["output_dir"] = Path(config.get("output_dir", str(s["dir"])))
+            config["output_dir"].mkdir(parents=True, exist_ok=True)
+
+            # Rebuild wildcard patterns if needed
+            config["scope_wildcard_patterns"] = []
+            for wc in config.get("scope_wildcards", []):
+                if wc.startswith("*."):
+                    base = re.escape(wc[2:])
+                    config["scope_wildcard_patterns"].append(
+                        re.compile(rf"^(.+[.])?{base}$", re.IGNORECASE)
+                    )
+
+            katana_results = cache.get("katana_results", {})
+            ffuf_results   = cache.get("ffuf_results", {})
+
+            total_k = sum(len(v) for v in katana_results.values())
+            total_f = sum(len(v) for v in ffuf_results.values())
+
+            log("OK", f"Session resumed: {config.get('target', '?')}")
+            log("INFO", f"  Loaded: {total_k} Katana URLs + {total_f} ffuf findings")
+            log("INFO", f"  Directory: {config['output_dir']}")
+
+            return config, katana_results, ffuf_results
+    except (ValueError, IndexError):
+        pass
+
+    return None
 
 
 def drill_down_menu(config: dict, katana_results: dict, ffuf_results: dict,
@@ -3774,9 +3953,9 @@ def run_drill_down(config: dict, parent_katana: dict, parent_ffuf: dict,
 
     if not skip_ffuf:
         current_wl = config.get("wordlist", "")
-        wl_in = input(
+        wl_in = input_path(
             f"  \033[96m[?]\033[0m Wordlist [Enter = {Path(current_wl).name if current_wl else 'none'}]: "
-        ).strip()
+        )
         if wl_in and Path(wl_in).is_file():
             drill_wordlist = wl_in
         elif wl_in:
@@ -3990,8 +4169,20 @@ def run_drill_down(config: dict, parent_katana: dict, parent_ffuf: dict,
 # SECTION 9: ENTRY POINT
 # =============================================================================
 
+def _post_phase_menu() -> str:
+    """Show menu after pipeline/drill: drill, save, or exit."""
+    print()
+    print("  \033[38;5;208m┌─ WHAT NEXT? ──────────────────────────────────────────────────────┐\033[0m")
+    print("  \033[38;5;208m│\033[0m  [1] 🔍 Drill-down — explore a node deeper")
+    print("  \033[38;5;208m│\033[0m  [2] 💾 Save & exit — resume this session later")
+    print("  \033[38;5;208m│\033[0m  [3] 🚪 Exit without saving")
+    print("  \033[38;5;208m└───────────────────────────────────────────────────────────────────┘\033[0m")
+    choice = input("  \033[96m[?]\033[0m Choice (1-3): ").strip()
+    return choice
+
+
 def main():
-    """Main entry point. Handles: disclaimer → banner → inputs → pipeline → drill-down loop."""
+    """Main entry point. Handles: disclaimer → banner → new/resume → pipeline → drill loop."""
 
     # ── Ethical use disclaimer ────────────────────────────────────────────────
     print()
@@ -4015,67 +4206,111 @@ def main():
         log("ERROR", "pyvis required: pip install pyvis --break-system-packages")
         sys.exit(1)
 
-    # ── Collect configuration ────────────────────────────────────────────────
-    try:
-        config = collect_inputs()
-    except KeyboardInterrupt:
-        print("\n\n  \033[93m[!] Cancelled by user.\033[0m\n")
-        sys.exit(0)
+    # ── New scan or resume session ───────────────────────────────────────────
+    print()
+    print("  \033[38;5;220m┌─ SESSION MODE ────────────────────────────────────────────────────┐\033[0m")
+    print("  \033[38;5;220m│\033[0m  [1] 🆕 New scan")
+    print("  \033[38;5;220m│\033[0m  [2] 📂 Resume saved session")
+    print("  \033[38;5;220m└───────────────────────────────────────────────────────────────────┘\033[0m")
+    mode = input("  \033[96m[?]\033[0m Choice (1-2): ").strip()
 
-    # ── Run initial pipeline ─────────────────────────────────────────────────
-    try:
-        result = run_pipeline(config)
+    if mode == "2":
+        # ── Resume saved session ─────────────────────────────────────────────
+        session_path = input(
+            "  \033[96m[?]\033[0m Path to session directory or session_cache.json:\n"
+            "      e.g. ~/spider_noir/recon_target.com_20260608_123456\n"
+            "      > "
+        ).strip()
+
+        if not session_path:
+            log("ERROR", "No path provided.")
+            sys.exit(1)
+
+        result = _resume_session(session_path)
         if result is None:
-            sys.exit(0)
-        katana_results, ffuf_results, output_html = result
-    except KeyboardInterrupt:
-        print("\n\n  \033[93m[!] Pipeline interrupted.\033[0m")
-        print(f"  \033[93m[!] Partial results in: {config['output_dir'].resolve()}\033[0m\n")
-        sys.exit(0)
-    except Exception as e:
-        log("ERROR", f"Unhandled critical error: {e}")
-        import traceback
-        traceback.print_exc()
-        sys.exit(1)
+            sys.exit(1)
 
-    # ── Drill-down loop ──────────────────────────────────────────────────────
-    # After the initial pipeline, the user can select nodes to explore deeper.
-    # Each drill-down re-crawls and re-fuzzes only the selected target with
-    # increased depth. Results are merged with the parent cache.
-    drill_depth = 0
-    current_base = config["target"]   # Tracks the base URL for the drill-down menu
+        config, katana_results, ffuf_results = result
+        drill_depth = len(config.get("drill_history", []))
+        log("OK", f"Resuming from drill depth {drill_depth}")
+        print()
+
+    else:
+        # ── New scan ─────────────────────────────────────────────────────────
+        try:
+            config = collect_inputs()
+        except KeyboardInterrupt:
+            print("\n\n  \033[93m[!] Cancelled by user.\033[0m\n")
+            sys.exit(0)
+
+        try:
+            result = run_pipeline(config)
+            if result is None:
+                sys.exit(0)
+            katana_results, ffuf_results, output_html = result
+        except KeyboardInterrupt:
+            print("\n\n  \033[93m[!] Pipeline interrupted.\033[0m")
+            print(f"  \033[93m[!] Partial results in: {config['output_dir'].resolve()}\033[0m\n")
+            sys.exit(0)
+        except Exception as e:
+            log("ERROR", f"Unhandled critical error: {e}")
+            import traceback
+            traceback.print_exc()
+            sys.exit(1)
+
+        drill_depth = 0
+
+    # ── Post-pipeline / drill-down loop ──────────────────────────────────────
+    current_base = config["target"]
 
     while True:
         try:
-            selected = drill_down_menu(config, katana_results, ffuf_results, drill_depth, current_base)
-            if selected is None:
-                log("INFO", "Exiting drill-down mode.")
+            choice = _post_phase_menu()
+
+            if choice == "2":
+                # Save & exit
+                _save_session_cache(config, katana_results, ffuf_results)
+                log("OK", f"Session saved to: \033[96m{config['output_dir'].resolve()}\033[0m")
+                log("INFO", "Resume later with: python3 spider_noir.py → option 2")
                 break
 
-            drill_depth += 1
+            elif choice == "3" or choice == "":
+                # Exit
+                log("INFO", "Exiting without saving.")
+                break
 
-            katana_results, ffuf_results, output_html = run_drill_down(
-                config, katana_results, ffuf_results, selected, drill_depth
-            )
+            elif choice == "1":
+                # Drill-down
+                selected = drill_down_menu(config, katana_results, ffuf_results, drill_depth, current_base)
+                if selected is None:
+                    continue   # back to menu
 
-            # After drill completes, set current_base to the drill's target
-            # so the NEXT menu builds URLs relative to this drill level.
-            # BUT: the menu shows data from parent_katana (unchanged),
-            # so we need to use the selected URL as base only if the user
-            # will drill into a CHILD of this node.
-            # For simplicity: always use the original target as base.
-            # The menu paths are absolute from the host root.
-            current_base = config["target"]
+                drill_depth += 1
+                pre_drill_base = current_base
+                current_base = selected["url"]
+
+                katana_results, ffuf_results, output_html = run_drill_down(
+                    config, katana_results, ffuf_results, selected, drill_depth
+                )
+                current_base = pre_drill_base
+
+            else:
+                log("WARN", "Invalid choice. Try 1, 2 or 3.")
+
         except KeyboardInterrupt:
-            print("\n\n  \033[93m[!] Drill-down interrupted.\033[0m\n")
+            print("\n")
+            _save_session_cache(config, katana_results, ffuf_results)
+            log("OK", "Session auto-saved on Ctrl+C.")
             break
         except Exception as e:
-            log("ERROR", f"Drill-down error: {e}")
+            log("ERROR", f"Error: {e}")
             import traceback
             traceback.print_exc()
+            _save_session_cache(config, katana_results, ffuf_results)
+            log("OK", "Session auto-saved after error.")
             break
 
-    # ── Final summary ────────────────────────────────────────────────────────
+    # ── Goodbye ──────────────────────────────────────────────────────────────
     print()
     log("OK", f"Session directory: \033[96m{config['output_dir'].resolve()}\033[0m")
     if drill_depth > 0:
