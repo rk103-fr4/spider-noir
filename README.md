@@ -181,12 +181,12 @@ This turns Spider Noir from a one-shot scanner into a **progressive exploration 
 
 ```
 ┌─────────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│  Subfinder   │────►│    Katana     │────►│     ffuf     │────►│  SVG Graph   │
-│  (passive)   │     │  (crawling)  │     │  (fuzzing)   │     │ (interactive)│
-│              │     │              │     │              │     │              │
-│ Subdomains   │     │ Visible URLs │     │ Hidden paths │     │ All combined │
-│ from public  │     │ from HTML/JS │     │ by wordlist  │     │ + actions    │
-│ sources      │     │ links        │     │ brute force  │     │ panel        │
+│  Subfinder  │────►│    Katana    │────►│     ffuf     │────►│  SVG Graph   │
+│  (passive)  │     │  (crawling)  │     │  (fuzzing)   │     │ (interactive)│
+│             │     │              │     │              │     │              │
+│ Subdomains  │     │ Visible URLs │     │ Hidden paths │     │ All combined │
+│ from public │     │ from HTML/JS │     │ by wordlist  │     │ + actions    │
+│ sources     │     │ links        │     │ brute force  │     │ panel        │
 └─────────────┘     └──────────────┘     └──────────────┘     └──────────────┘
 ```
 ## Legal & Ethical Disclaimer
